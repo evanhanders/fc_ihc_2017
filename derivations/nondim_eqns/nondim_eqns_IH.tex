@@ -131,6 +131,14 @@ must be specified: \emph{length} and \emph{another thermodynamic variable}, but 
 these are bound to the choices that we've made here.
 \end{enumerate}
 
+\subsubsection{Sanity check: entropy equation}
+As a sanity check, I want to do the same thing as I did above, but with the entropy
+form of the energy equation from \cite{lecoanet&all2014}.  This equation takes the form:
+\begin{equation}
+\rho T \frac{D S}{D t} = -\grad \cdot (-\kappa \grad \frac{S}{c_P}) - \mu \grad^2 u^2 + \kappa H 
+\end{equation}
+where here, $\kappa = \chi_s \rho T$.
+
 \subsection{Getting to a linearized momentum equation}
 OK, so in order to do anything meaningful with the momentum equation (or at least, anything
 that is both easy and meaningful), we need to change its form.  The first step in this process
@@ -153,7 +161,7 @@ $-\grad\cdot\stressT \sim -\mu \grad^2 \bm{u}$, so that I can more clearly see i
 units and non-dimensionalize.  I also note that $\nu = \mu / \rho$.  Thus, my momentum
 equation becomes
 \begin{equation}
-\frac{D \bm{u}}{Dt} = -\frac{\grad P_1}{\rho} - \frac{\rho_1}{\rho} - \nu \grad^2 \bm{u}.
+\frac{D \bm{u}}{Dt} = -\frac{\grad P_1}{\rho} + \frac{\rho_1}{\rho}\bm{g} - \nu \grad^2 \bm{u}.
 \end{equation}
 At this point, aside from the sort of contrived form of the viscous term, this equation is
 still general to perturbations of any size.  But...now I'm going to make an assumption. All
@@ -168,9 +176,9 @@ To make this prettier, I will do a couple of things.  First, note that
 $$
 \ln (A + B) = \ln\left(A\left[1 + \frac{B}{A}\right]\right) = \ln(A) + \ln\left(1 + \frac{B}{A}\right).
 $$
-Thus, we write the equation of state as
+Thus, we write the equation of state (after trivially integrating away the dels):
 \begin{equation}
-\frac{\grad S_0}{c_P} + \frac{\grad S_1}{c_P} = \frac{1}{\gamma}\ln(P_0) + \frac{1}{\gamma}\ln\left(1 + \frac{P_1}{P_0}\right)
+\frac{S_0}{c_P} + \frac{S_1}{c_P} = \frac{1}{\gamma}\ln(P_0) + \frac{1}{\gamma}\ln\left(1 + \frac{P_1}{P_0}\right)
 - \ln(\rho_0) - \ln\left(1 + \frac{\rho_1}{\rho_0}\right).
 \end{equation}
 By definition, the ``0'' terms on both sides of the equation are equal to one another, so they
@@ -181,10 +189,42 @@ $$
 for $x \ll 1$, and I find the linearized equation of state,
 \begin{equation}
 \boxed{
-\frac{\grad S_1}{c_P} = \frac{1}{\gamma} \frac{P_1}{P_0} - \frac{\rho_1}{\rho_0}
+\frac{S_1}{c_P} = \frac{1}{\gamma} \frac{P_1}{P_0} - \frac{\rho_1}{\rho_0}
 }.
 \end{equation}
 
+Now this term can go into the $\rho_1/\rho \bm{g} \approx \rho_1/\rho_0 \bm{g}$ term 
+of the momentum equation, and I find
+$$
+\frac{\rho_1}{\rho_0}\bm{g} = \frac{1}{\gamma}\frac{P_1}{P_0}\bm{g} - \frac{S_1}{c_p}\bm{g}.
+$$
+Now, I play math tricks, and note that:
+$$
+\frac{1}{\gamma}\frac{P_1}{P_0}\frac{\rho_0}{\rho_0}\bm{g} = \frac{1}{\gamma}\frac{P_1}{\rho_0}\grad\ln P_0
+= \frac{P_1}{\rho_0}\left(\frac{\grad S_0}{c_P} + \grad \ln \rho_0\right)
+$$
+where I've used the hydrostatic equilibrium of the initial conditions to cancel terms 
+($\grad \ln P_0 = \rho_0 \bm{g} / P_0$), and then I've used the initial conditions
+and their entropy EOS to do the next term ($\grad \ln P_0 / \gamma = \grad S_0 / c_P + \grad \ln \rho_0$).
+Putting this into the momentum equation,
+\begin{equation}
+\frac{D\bm{u}}{Dt} = -\frac{\grad P_1}{\rho_0} + \frac{P_1}{\rho_0}\grad\ln\rho_0 + \frac{P_1}{\rho_0}\frac{\grad S_0}{c_P}
+- \frac{S_1}{c_P}\bm{g} - \nu \grad^2\bm{u}
+\end{equation}
+The first two terms on the RHS condense, because
+$$
+\grad\left(\frac{P_1}{\rho_0}\right) = \frac{\grad P_1}{\rho_0} - \frac{P_1}{\rho_0}\grad\ln\rho_0
+$$
+and then I define $\varpi \equiv P_1/\rho_0$, such that the momentum equation is
+\begin{equation}
+\boxed{
+\frac{D\bm{u}}{Dt} = -\grad \varpi + \varpi \frac{\grad S_0}{c_P} - \frac{S_1}{c_P}\bm{g} - \nu\grad^2\bm{u}.
+}
+\end{equation}
+This form of the equation is ripe to be non-dimensionalized, but it is \emph{not} the full equation,
+as the viscous term has been butchered so that it's dimensionality is clear, and we have assumed that
+the fluctuations are small.
 
-\bibliography{./biblio.bib}
+
+\bibliography{../biblio.bib}
 \end{document}
