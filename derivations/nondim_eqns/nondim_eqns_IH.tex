@@ -1,0 +1,190 @@
+%\documentclass[iop]{emulateapj}
+\documentclass[aps, pre, onecolumn, nofootinbib, notitlepage, groupedaddress, amsfonts, amssymb, amsmath, longbibliography]{revtex4-1}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+\usepackage{bm}
+\usepackage{natbib}
+\usepackage{longtable}
+\LTcapwidth=0.87\textwidth
+
+\newcommand{\Div}[1]{\ensuremath{\nabla\cdot\left( #1\right)}}
+\newcommand{\angles}[1]{\ensuremath{\left\langle #1 \right\rangle}}
+\newcommand{\grad}{\ensuremath{\nabla}}
+\newcommand{\RB}{Rayleigh-B\'{e}nard }
+\newcommand{\stressT}{\ensuremath{\bm{\bar{\bar{\Pi}}}}}
+\newcommand{\lilstressT}{\ensuremath{\bm{\bar{\bar{\sigma}}}}}
+\newcommand{\nrho}{\ensuremath{n_{\rho}}}
+\newcommand{\approptoinn}[2]{\mathrel{\vcenter{
+	\offinterlineskip\halign{\hfil$##$\cr
+	#1\propto\cr\noalign{\kern2pt}#1\sim\cr\noalign{\kern-2pt}}}}}
+
+\newcommand{\appropto}{\mathpalette\approptoinn\relax}
+
+\newcommand\mnras{{MNRAS}}%
+
+\begin{document}
+\title{FC equations with Internal Heating, non-dimensionalized}
+
+\maketitle
+
+\section{FC Equations}
+The fully compressible Navier-Stokes equations, which we will solve, are:
+\begin{equation}
+\begin{split}
+\frac{D \ln \rho}{D t} + \grad\cdot(\bm{u}) &= 0 \\
+\rho\frac{D \bm{u}}{D t} &= -\grad P + \rho \bm{g} - \grad\cdot\stressT \\
+\rho c_V \left(\frac{D T}{D t} + (\gamma - 1)T\grad\cdot\bm{u}\right) + 
+\grad\cdot ( - \kappa \grad T) &= - (\stressT \cdot \grad) \cdot \bm{u} + \kappa H
+\end{split}
+\end{equation}
+Which is to say that we've added a term to the energy equation, $\kappa H$, where
+$\kappa$ and $H$ are both constants, and so this is a source term that will internally
+heat the system.
+
+\subsection{Non-dimensionalization}
+In order to non-dimensionalize, we need to essentially define new variables in
+terms of our old variables, where we have removed an important scale factor from
+each which in some way describes a physical scale of our problem.
+Thus, I define:
+\begin{equation}
+\begin{split}
+\grad &= \frac{1}{\bar{L}}\grad^* \\
+t &= \bar{t} t^* \\
+T &= \bar{T} T^* \\
+u &= \bar{u} u^* = \frac{\bar{L}}{\bar{t}} u^*
+\end{split}
+\end{equation}
+Here, variables with over-bars are the dimension-full, characteristic scales of my problem,
+and starred variables are my non-dimensional, time-evolving variables.
+Thus far, I have only non-dimensionalized one of my thermodynamic variables (temperature),
+and I will need to do another one later, but I won't worry about that for now.
+
+\subsection{Non-dimensionalizing the energy equation}
+In the spirit of the last section, I will now replace all of my dimension-filled variables
+with dimensionless variables.  I have also replaced the viscous heating term with a term
+that has equivalent units ($\mu \grad^2 \bm{u}^2$), to make the nondimensionalizing clearer.
+For reasons that will become clear, I will leave $\rho$ filled with dimensions:
+\begin{equation}
+\rho c_v \frac{\bar{T}}{\bar{t}}\left(\frac{D T^*}{D t^*} + (\gamma - 1)T^*\grad^*\cdot\bm{u}^*\right)
+- \frac{\kappa \bar{T}}{\bar{L}^2} (\grad^*)^2 T^* = - \frac{\mu}{\bar{t}^2}(\grad^*)^2 (u^*)^2
++ \kappa H
+\end{equation}
+Multiplying the full equation by $\bar{T}/ (\bar{t} \rho c_V)$, and then noting that
+$\kappa / \rho = \chi$ and $\mu / \rho = \nu$ (the corresponding diffusivities), we get
+\begin{equation}
+\frac{D T^*}{D t^*} + (\gamma - 1)T^*\grad \cdot\bm{u}^* - \frac{\chi \bar{t}}{c_V \bar{L}^2}
+(\grad^*)^2 T^* = -\frac{\nu}{c_V\bar{T}\bar{t}}(\grad^*)^2(u^*)^2 + \frac{\chi \bar{t}}{c_V\bar{T}} H
+\end{equation}
+At this point, I think it's logical to make a standard choice for $\bar{t}$,
+$$
+\bar{t} = c_V\frac{\bar{L}^2}{\chi},
+$$
+which is just the thermal diffusion timescale over the characteristic length scale of the
+problem (which has yet to be specified).  With that in mind, and plugging in $\bar{t}$
+throughout, we get
+\begin{equation}
+\frac{D T^*}{D t^*} + (\gamma - 1) T^* \grad^*\cdot\bm{u}^* - (\grad^*)^2T^* =
+-\frac{\nu\chi}{c_V^2 \bar{T} \bar{L}^2} (\grad^*)^2(u^*)^2 + \frac{\bar{L}^2}{\bar{T}} H.
+\end{equation}
+At this point, the next step is not entirely obvious to me (I know it must be done to the
+$H$ term, though).  I think there's either two ways to go:
+\begin{enumerate}
+\item The classic choice in Rayleigh-Benard: Non-dimensionalize the internal heating term
+so that it is 1.
+\item A more appropriate one for us (maybe?): non-dimensionalize the internal heating term
+so that it is $\epsilon$, as this will reflect the size of thermo fluctuations that are produced.
+I'll try that.
+\end{enumerate}
+So with choice number 2,
+$$
+\frac{\bar{L}^2}{\bar{T}} H  = \epsilon,
+$$
+and
+$$
+\bar{T} = \bar{L}^2 \frac{H}{\epsilon}
+$$
+Then, plugging that in, and dropping the stars because they're annoying, we're left with
+a dimensionless equation that looks like
+\begin{equation}
+\boxed{
+\frac{D T}{D t} + (\gamma - 1) T \grad\cdot\bm{u} - \grad^2 T 
+= -\epsilon \frac{\nu\chi}{c_V^2 \bar{L}^4 H} \grad^2 u^2 + \epsilon}.
+\end{equation}
+Two interesting things to note here:
+\begin{enumerate}
+\item It's clearly visible what the scale of the internal heating is, and how it feeds into
+the total temperature profile (this is some order $\epsilon$ deviation from the adiabatic).
+\item The term in front of viscous heating is like Ra$^{-1}$, or something similar, which
+means that the viscous heating term is shrinking linearly with the Rayleigh number.  This
+will happen without the internal heating, too, it just is mega clear, here, and I've never
+seen it before, neat.
+\item This equation is really quite clean, and from it we have constrained two of our problem's
+scales: \emph{time} and \emph{temperature}.  There are still two remaining free scales that
+must be specified: \emph{length} and \emph{another thermodynamic variable}, but both of
+these are bound to the choices that we've made here.
+\end{enumerate}
+
+\subsection{Getting to a linearized momentum equation}
+OK, so in order to do anything meaningful with the momentum equation (or at least, anything
+that is both easy and meaningful), we need to change its form.  The first step in this process
+is to decompose all thermodynamic variables into background and fluctuating components, e.g.
+\begin{equation}
+\begin{split}
+\rho &= \rho_0 + \rho_1 \\
+T &= T_0 + T_1 \\
+P &= P_0 + P_1
+\end{split}
+\end{equation}
+Next, I will make the assumption that my background (0) state is in hydrostatic equilibrium,
+such that $-\grad P_0 - \rho g \hat{z} = 0$, and in making that assumption I will remove it
+from the momentum equation.  This leaves me with
+\begin{equation}
+\rho \frac{D\bm{u}}{Dt} = -\grad P_1 - \rho_1 g \hat{z} - \grad\cdot\stressT.
+\end{equation}
+Next, I divide by $\rho$, and I put the stress tensor term into a more familiar form
+$-\grad\cdot\stressT \sim -\mu \grad^2 \bm{u}$, so that I can more clearly see its
+units and non-dimensionalize.  I also note that $\nu = \mu / \rho$.  Thus, my momentum
+equation becomes
+\begin{equation}
+\frac{D \bm{u}}{Dt} = -\frac{\grad P_1}{\rho} - \frac{\rho_1}{\rho} - \nu \grad^2 \bm{u}.
+\end{equation}
+At this point, aside from the sort of contrived form of the viscous term, this equation is
+still general to perturbations of any size.  But...now I'm going to make an assumption. All
+thermodynamic perturbations are small compared to the background ($\rho_1 \ll \rho_0$,
+and so on, such that $\rho = \rho_0 + \rho_1 \approx \rho_0$).
+
+Under this approximation, we must examine the equation of state,
+\begin{equation}
+\frac{\grad S}{c_P} = \frac{1}{\gamma}\grad\ln(P_0 + P_1) - \grad \ln (\rho_0 + \rho_1).
+\end{equation}
+To make this prettier, I will do a couple of things.  First, note that
+$$
+\ln (A + B) = \ln\left(A\left[1 + \frac{B}{A}\right]\right) = \ln(A) + \ln\left(1 + \frac{B}{A}\right).
+$$
+Thus, we write the equation of state as
+\begin{equation}
+\frac{\grad S_0}{c_P} + \frac{\grad S_1}{c_P} = \frac{1}{\gamma}\ln(P_0) + \frac{1}{\gamma}\ln\left(1 + \frac{P_1}{P_0}\right)
+- \ln(\rho_0) - \ln\left(1 + \frac{\rho_1}{\rho_0}\right).
+\end{equation}
+By definition, the ``0'' terms on both sides of the equation are equal to one another, so they
+drop out.  Then, I use the (taylor expansion) relation that
+$$
+\ln(1 + x) \approx x
+$$
+for $x \ll 1$, and I find the linearized equation of state,
+\begin{equation}
+\boxed{
+\frac{\grad S_1}{c_P} = \frac{1}{\gamma} \frac{P_1}{P_0} - \frac{\rho_1}{\rho_0}
+}.
+\end{equation}
+
+
+\bibliography{./biblio.bib}
+\end{document}
