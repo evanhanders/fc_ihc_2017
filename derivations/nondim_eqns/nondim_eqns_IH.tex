@@ -137,7 +137,41 @@ form of the energy equation from \cite{lecoanet&all2014}.  This equation takes t
 \begin{equation}
 \rho T \frac{D S}{D t} = -\grad \cdot (-\kappa \grad \frac{S}{c_P}) - \mu \grad^2 u^2 + \kappa H 
 \end{equation}
-where here, $\kappa = \chi_s \rho T$.
+where here, $\kappa = \chi_s \rho T$.  Note that $\mu = \rho \nu$.  The alternative form of this equation is one in which
+the diffusion is $-\kappa \grad T$, where $\kappa = \chi_T \rho$.
+
+If we assume constant kappa/mu, then divide by $\rho T$, we get
+\begin{equation}
+\frac{DS}{Dt} = \chi_S\grad^2 \frac{S}{c_P} - \frac{\nu}{T}\grad^2 u^2 + \chi_s H
+\end{equation}
+Doing the thing where we pull dimensions out of everything,
+$$
+\frac{\bar{S}}{\bar{t}}\frac{D S^*}{D t^*} = \chi_S \frac{\bar{S}}{c_P\bar{L}^2}(\grad^*)^2 S^*
+- \frac{\nu}{\bar{T}\bar{t}^2}\frac{1}{T^*}(\grad^*)^2(u^*)^2 + \chi_s H
+$$
+Then, multiplying by $\bar{t}/\bar{S}$,
+\begin{equation}
+\frac{DS^*}{Dt^*} = \frac{\chi_S \bar{t}}{c_P \bar{L}^2}(\grad^*)^2 S^* 
+- \frac{\nu}{\bar{T}\bar{S}\bar{t}}(\grad^*)^2(u^*)^2 + \frac{\chi_s \bar{t}}{\bar{S}} H
+\end{equation}
+So it's pretty clear that, again, we're going to non-dimensionalize time on the entropy
+diffusion timescale,
+$$
+\bar{t} = \frac{\bar{L}^2}{\chi_S}c_P.
+$$
+And with that choice, it seems that the appropriate non-dimensionalization of entropy
+is
+$$
+\bar{S} = \frac{\bar{t}\chi_S H}{\epsilon} = \frac{\bar{L}^2 H c_P}{\epsilon}
+$$
+Under these choices, the entropy energy equation with entropy diffusion becomes (dropping the
+annoying stars because at this point all important things are non-dimensionalized),
+\begin{equation}
+\frac{D S}{D t} = \grad^2 S - \left(\frac{\nu\chi_S\epsilon}{\bar{T}\bar{L}^4 H c_P}\right)
+\grad^2 u^2 + \epsilon
+\end{equation}
+Once again, viscous heating has a 1/Ra type term in front of it, with a few extra constants
+thrown in.  
 
 \subsection{Getting to a linearized momentum equation}
 OK, so in order to do anything meaningful with the momentum equation (or at least, anything
@@ -224,6 +258,89 @@ and then I define $\varpi \equiv P_1/\rho_0$, such that the momentum equation is
 This form of the equation is ripe to be non-dimensionalized, but it is \emph{not} the full equation,
 as the viscous term has been butchered so that it's dimensionality is clear, and we have assumed that
 the fluctuations are small.
+
+\subsection{Non-dimensional, linear momentum equation}
+Taking the linearized momentum equation and pulling out dimensions from all terms except those that
+have $\varpi$,
+$$
+\frac{\bar{L}}{\bar{t}^2}\frac{D \bm{u}^*}{D t^*} = \left(-\grad\varpi + \varpi\frac{\grad S_0}{c_P}\right)
++ \frac{\bar{S}g}{c_P} S_1^* \hat{z} - \frac{\nu}{\bar{L}\bar{t}}(\grad^*)^2\bm{u}^*.
+$$
+If we multiply through by $\bar{t}^2/\bar{L}$, we get
+$$
+\frac{D\bm{u}^*}{Dt^*} = \frac{\bar{t}^2}{\bar{L}}\left(-\grad\varpi + \varpi\frac{\grad S_0}{c_P}\right)
++ \frac{\bar{S} g \bar{t}^2}{\bar{L} c_P} S_1^* \hat{z} - \frac{\nu \bar{t}}{\bar{L}^2}(\grad^*)^2\bm{u}^*.
+$$
+The last two terms are the ones we're interested in now.  On the last term, after plugging in the
+definition of $\bar{t}$ from the energy equation, we get $\nu c_V / \chi$, which is basically
+Pr.  On the second to last term, we get $\bar{S} \bar{L}^3 c_V^2 g/ c_P \chi^2$, which is basically
+RaPr.  So, under this set of equations,
+\begin{equation}
+\text{Pr} \equiv c_V \frac{\nu}{\chi} \qquad \text{Ra} = c_V\frac{g \bar{L}^3 (\bar{S}/c_P)}{\chi \nu}
+\end{equation}
+Which is to say, these are the standard definitions of Ra and Pr, but with $c_V$'s in front,
+which means either I've messed up here, or I've been careless in the past.
+
+Either way, the important thing to do now is figure out $\bar{L}$ and $\bar{S}$.
+
+\subsubsection{Argument for $\bar{L}$}
+I think this one is simple.  The length scale we're interested in is the length scale of the
+system in which a superadiabatic flux is being carried -- this is the scale over which we 
+\emph{know} we need convection, and for our setup, as I explained in our ``paper,''
+$$
+\bar{L} = d_{\text{conv}} = \frac{\epsilon}{H c_P},
+$$
+where the heating term's magnitude is
+$$
+H = \frac{\epsilon}{L_z c_P (1 - f)},
+$$
+which means that in terms of control parameters, as we would anticipate,
+$$
+\bar{L} = (1 - f) L_z.
+$$
+
+\subsubsection{Argument for $\bar{S}$}
+This one's trickier.  I think it's important to remember that an underlying assumption of
+this whole form of the rayleigh number and prandtl number is that we used the linearized equation
+of state to get here.  So in a consistently scaled system,
+$$
+\frac{\bar{S}}{c_P} \sim \frac{1}{\gamma}\frac{\bar{T}}{T_{0, scale}} - \frac{\gamma-1}{\gamma}\frac{\bar{\rho}}{\rho_{0, scale}}.
+$$
+Or something of the sort.  So here, I'm explicitly stating that $\bar{T}$ is non-dimensionalizing the
+\emph{non-background} motions, and the same goes for $\bar{S}$, and the same goes for $\bar{\rho}$. 
+This is actually an important distinction. I think I need to use something like eqn (14) of
+\cite{brown&all2012} along with this assumption to get a reasonable scale for $S_0$
+(and I'll need to bring in my assumptions about $\bar{t}$ and $\bar{L}$ to get there.)
+
+The linearized momentum equation \citep{brown&all2012} is
+\begin{equation}
+\frac{\partial \rho_1}{\partial t} + \bm{u}\cdot\grad\rho_0 = -\rho_0 \grad\cdot\bm{u}
+\end{equation}
+and I just realized that this is going to give us just $\rho_1/\rho_0 = $ whatever I set
+it to be, so oops.
+
+But still, let's just say that $T_0, \rho_0$ are O(1), then
+$$
+\frac{\bar{S}}{c_P} \sim \frac{1}{\gamma}\bar{T} - \frac{\bar{\rho}}{c_P}.
+$$
+We have $\bar{T}$ from the energy equation,
+$$
+\bar{T} = \bar{L}^2 H,
+$$
+so ok.
+
+It's a bit reckless, but for now, a \emph{good approximation} is that
+\begin{equation}
+\bar{S} = c_P(\bar{L}^2 H).
+\end{equation}
+
+\subsubsection{Making a Rayleigh Number}
+So in the end, our initial Rayleigh number (to get some first cut simulations up and running)
+is going to be
+\begin{equation}
+\text{Ra} = \frac{g \bar{L}^3 (\bar{S}/c_P)}{\nu\chi} = \frac{g (1 - f)^5 L_z^5 H}{\nu\chi} = 
+\frac{g (1 - f)^4 L_z ^4 \epsilon }{\nu\chi}
+\end{equation}
 
 
 \bibliography{../biblio.bib}
