@@ -325,4 +325,323 @@ class Atmosphere:
         self.check_that_atmosphere_is_set()
         
 
+class ConstHeating(Atmosphere):
+    '''
+    A reference atmosphere which is characterized by being in thermal and hydrostatic equilibrium
+    for an atmosphere with a constant internal heating term in the energy equation
+    '''
+    def __init__(self,
+                 nx=256,
+                 ny=256,
+                 nz=128,
+                 aspect_ratio=4,
+                 n_rho_cz = 4, #Initially use the number of density scale heights of an adiabatic polytrope
+                 epsilon=1e-4, gamma=5/3, f=0.5,
+                 constant_kappa=True, constant_mu=True,
+                 **kwargs):
+        
+        self.atmosphere_name = 'Internally Heated Atmosphere -- Constant Heating'
+        self.aspect_ratio    = aspect_ratio
+        self.n_rho_cz        = n_rho_cz
+        self.f               = f
+        self._set_atmosphere_parameters(gamma=gamma, epsilon=epsilon)
+        self.Lz = self._calculate_Lz_cz(n_rho_cz, self.m_ad)
+        self.z_cross = self.f * self.Lz
+        self.d_conv  = self.Lz - self.z_cross
+        self.H = self.epsilon / (self.Lz * (1 - self.f) * self.Cp)
+        self.Lx = self.Ly = self.Lz*aspect_ratio
+            
+        super(ConstHeating, self).__init__(nx=nx, ny=ny, nz=nz, Lx=self.Lx, Ly=self.Ly, Lz=self.Lz, **kwargs)
+        logger.info("   Lx = {:g}, Lz = {:g}".format(self.Lx, self.Lz))
+      
+        #TODO: Improve language around "constant kappa/mu" and "dynamic diffusivities" stuff
+        self.constant_kappa = constant_kappa
+        self.constant_mu    = constant_mu
+        if self.constant_kappa == False and self.constant_mu == False:
+            self.constant_diffusivities = True
+        else:
+            self.constant_diffusivities = False
+
+        self._set_atmosphere()
+        self._set_timescales()
+
+    def _calculate_Lz_cz(self, n_rho_cz, m_ad):
+        '''
+        Calculate Lz based on the number of density scale heights and an adiabatic polytrope.
+        '''
+        #The absolute value allows for negative m_cz.
+        Lz_cz = np.exp(n_rho_cz/np.abs(m_ad))-1
+        return Lz_cz
+    
+    def _set_atmosphere_parameters(self, gamma, epsilon):
+        # polytropic atmosphere characteristics
+        self.gamma = gamma
+        self.Cv = 1/(self.gamma-1)
+        self.Cp = self.gamma*self.Cv
+        self.epsilon = epsilon
+
+        self.m_ad = 1/(self.gamma-1)
+        self.g = self.m_ad + 1 - self.epsilon
+
+        logger.info("IH Atmosphere parameters:")
+        logger.info("   m_ad = {:g}, epsilon = {:g}, gravity = {:g}, gamma = {:g}".format(self.m_ad, self.epsilon, self.g, self.gamma))
+    
+    def _set_atmosphere(self):
+        super(ConstHeating, self)._set_atmosphere()
+
+        self.T0_zz['g'] = -self.H
+        self.T0_z['g'] = - 1 + self.H * (self.Lz - self.z)
+        self.T0['g'] = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+
+        self.T0_z.set_scales(1, keep_data=True)
+        self.T0.set_scales(1, keep_data=True)
+        self.del_ln_rho0['g'] = - (self.g + self.T0_z['g']) / self.T0['g']
+        self.del_ln_rho0.antidifferentiate('z', ('right', '0'), out=self.ln_rho0)
+        self.ln_rho0.set_scales(1, keep_data=True)
+        self.rho0['g'] = np.exp(self.ln_rho0['g'])
+
+        self.T0_z.set_scales(1, keep_data=True)
+        self.T0.set_scales(1, keep_data=True)
+        self.ln_rho0.set_scales(1, keep_data=True)
+        #Note: this is grad S, not grad S / cP
+        self.del_s0['g'] = (1/(self.gamma-1)) * self.T0_z['g']/self.T0['g'] - self.ln_rho0['g']
+        self.delta_s = self.del_s0.integrate('z', ('right', '0'))
+        print(self.delta_s)
+ 
+        self.T0.set_scales(1, keep_data=True)
+        self.rho0.set_scales(1, keep_data=True)
+        self.P0['g'] = self.rho0['g']*self.T0['g']
+        self.P0.differentiate('z', out=self.del_P0)
+        self.del_P0.set_scales(1, keep_data=True)
+        self.P0.set_scales(1, keep_data=True)
+        
+        if self.constant_diffusivities:
+            self.scale['g']            = (self.z0 - self.z)
+            self.scale_continuity['g'] = (self.z0 - self.z)
+            self.scale_momentum['g']   = (self.z0 - self.z)
+            self.scale_energy['g']     = (self.z0 - self.z)
+        else:
+            # consider whether to scale nccs involving chi differently (e.g., energy equation)
+            self.scale['g']            = (self.z0 - self.z)
+            self.scale_continuity['g'] = (self.z0 - self.z)
+            self.scale_momentum['g']   = (self.z0 - self.z)# **np.ceil(self.m_cz)
+            self.scale_energy['g']     = (self.z0 - self.z)# **np.ceil(self.m_cz)
+
+        # choose a particular gauge for phi (g*z0); and -grad(phi)=g_vec=-g*z_hat
+        # double negative is correct.
+        self.phi['g'] = -self.g*(self.z0 - self.z)
+
+        rho0_max, rho0_min = self.value_at_boundary(self.rho0)
+        if rho0_max is not None:
+            try:
+		# For "strange" resolutions (e.g., 96x192), sometimes this crashes.  Need to investigate. (9/12/2017)
+                rho0_ratio = rho0_max/rho0_min
+                logger.info("   density: min {}  max {}".format(rho0_min, rho0_max))
+                logger.info("   density scale heights = {:g} (measured)".format(np.log(rho0_ratio)))
+                logger.info("   density scale heights = {:g} (target)".format(np.log((self.z0)**self.poly_m)))
+            except:
+                if self.domain.distributor.comm_cart.rank == 0:
+                    logger.error("Something went wrong with reporting density range")
+           
+        #TODO: Fix this, make it general and calculate it from fields.
+        H_rho_top = (self.z0-self.Lz)/self.poly_m
+        H_rho_bottom = (self.z0)/self.poly_m
+        logger.info("   H_rho = {:g} (top)  {:g} (bottom)".format(H_rho_top,H_rho_bottom))
+        if self.delta_x != None:
+            logger.info("   H_rho/delta x = {:g} (top)  {:g} (bottom)".format(H_rho_top/self.delta_x,
+                                                                          H_rho_bottom/self.delta_x))
+        
+    def _set_timescales(self, atmosphere=None):
+        if atmosphere is None:
+            atmosphere=self
+            
+        # min of global quantity
+        atmosphere.min_BV_time = self.domain.dist.comm_cart.allreduce(np.min(np.sqrt(np.abs(self.g*self.del_s0['g']/self.Cp))), op=MPI.MIN)
+        atmosphere.freefall_time = np.sqrt(self.Lz/self.g)
+        atmosphere.buoyancy_time = np.sqrt(np.abs(self.Lz*self.Cp / (self.g * self.delta_s)))
+        
+        logger.info("atmospheric timescales:")
+        logger.info("   min_BV_time = {:g}, freefall_time = {:g}, buoyancy_time = {:g}".format(atmosphere.min_BV_time,
+                                                                                               atmosphere.freefall_time,
+                                                                                               atmosphere.buoyancy_time))
+    def _set_diffusivities(self, Rayleigh=1e6, Prandtl=1, split_diffusivities=False):
+       
+        logger.info("problem parameters:")
+        logger.info("   Ra = {:g}, Pr = {:g}".format(Rayleigh, Prandtl))
+        self.Rayleigh, self.Prandtl = Rayleigh, Prandtl
+
+        # set nu and chi at top based on Rayleigh number
+        self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**4 * self.epsilon * self.g) / Rayleigh)
+        self.chi_top = chi_top = nu_top/Prandtl
+
+        if self.constant_diffusivities:
+            # take constant nu, chi
+            nu = nu_top
+            chi = chi_top
+
+            logger.info("   using constant nu, chi")
+            logger.info("   nu = {:g}, chi = {:g}".format(nu, chi))
+        else:
+            if self.constant_kappa:
+                self.rho0.set_scales(1, keep_data=True)
+                if not split_diffusivities:
+                    chi_l = chi_top/(self.rho0['g'])
+                    chi_r = 0
+                else:
+                    if self.poly_m < 1:
+                        chi_l = np.exp(self.n_rho_cz)*chi_top/(self.z0 - self.z)
+                    else:
+                        chi_l = chi_top/(self.z0 - self.z)
+                    chi_r = chi_top/(self.rho0['g']) - chi_l
+                logger.info('using constant kappa')
+            else:
+                chi_l = chi_top
+                chi_r = 0
+                logger.info('using constant chi')
+            if self.constant_mu:
+                self.rho0.set_scales(1, keep_data=True)
+                if not split_diffusivities:
+                    nu_l  = nu_top/(self.rho0['g'])
+                    nu_r = 0
+                else:
+                    if self.poly_m < 1:
+                        nu_l  = np.exp(self.n_rho_cz)*nu_top/(self.z0 - self.z)
+                    else:
+                        nu_l  = nu_top/(self.z0 - self.z)
+                    nu_r  = nu_top/(self.rho0['g']) - nu_l
+                logger.info('using constant mu')
+            else:
+                nu_l  = nu_top
+                nu_r = 0
+                logger.info('using constant nu')
+
+      
+            logger.info("   nu_top = {:g}, chi_top = {:g}".format(nu_top, chi_top))
+
+        self.IH_flux['g'] = - self.chi_top * self.H * self.z
+
+        #TODO: look at everything below this
+                    
+        #Allows for atmosphere reuse
+        self.chi_l.set_scales(1, keep_data=True)
+        self.nu_l.set_scales(1, keep_data=True)
+        self.chi_r.set_scales(1, keep_data=True)
+        self.nu_r.set_scales(1, keep_data=True)
+        self.nu.set_scales(1, keep_data=True)
+        self.chi.set_scales(1, keep_data=True)
+        self.nu_l['g'] = nu_l
+        self.chi_l['g'] = chi_l
+        self.nu_r['g'] = nu_r
+        self.chi_r['g'] = chi_r
+        self.nu['g'] = nu_l + nu_r
+        self.chi['g'] = chi_l + chi_r
+
+        self.chi_l.differentiate('z', out=self.del_chi_l)
+        self.chi_l.set_scales(1, keep_data=True)
+        self.nu_l.differentiate('z', out=self.del_nu_l)
+        self.nu_l.set_scales(1, keep_data=True)
+        self.chi_r.differentiate('z', out=self.del_chi_r)
+        self.chi_r.set_scales(1, keep_data=True)
+        self.nu_r.differentiate('z', out=self.del_nu_r)
+        self.nu_r.set_scales(1, keep_data=True)
+
+        # determine characteristic timescales; use chi and nu at middle of domain for bulk timescales.
+        self.thermal_time = self.Lz**2/(self.chi.interpolate(z=self.Lz/2)['g'][0])
+        self.top_thermal_time = 1/chi_top
+
+        self.viscous_time = self.Lz**2/(self.nu.interpolate(z=self.Lz/2)['g'][0])
+        self.top_viscous_time = 1/nu_top
+
+        if self.dimensions == 2:
+            self.thermal_time = self.thermal_time[0]
+            self.viscous_time = self.viscous_time[0]
+        if self.dimensions > 2:
+            #Need to communicate across processes if mesh is weird in 3D
+            therm = np.zeros(1, dtype=np.float64)
+            visc  = np.zeros(1, dtype=np.float64)
+            therm_rcv, visc_rcv = np.zeros_like(therm), np.zeros_like(visc)
+            therm[0] = np.mean(self.thermal_time)
+            visc[0]  = np.mean(self.viscous_time)
+            if np.isnan(therm): therm[0] = 0
+            if np.isnan(visc):  visc[0]  = 0
+            self.domain.dist.comm_cart.Allreduce(therm, therm_rcv, op=MPI.MAX)
+            self.thermal_time = therm_rcv[0]
+            self.domain.dist.comm_cart.Allreduce(visc, visc_rcv, op=MPI.MAX)
+            self.viscous_time = visc_rcv[0]
+
+        logger.info("thermal_time = {}, top_thermal_time = {}".format(self.thermal_time,
+                                                                      self.top_thermal_time))
+        self.nu.set_scales(1, keep_data=True)
+        self.chi.set_scales(1, keep_data=True)
+
+    def save_atmosphere_file(self, data_dir):
+        #This creates an output file that contains all of the useful atmospheric info at the beginning of the run
+        out_dir = data_dir + '/atmosphere/'
+        out_file = out_dir + 'atmosphere.h5'
+        if self.domain.dist.rank == 0:
+            if not os.path.exists('{:s}'.format(out_dir)):
+                os.mkdir('{:s}'.format(out_dir))
+            f = h5py.File('{:s}'.format(out_file), 'w')
+        indxs = [0]*self.dimensions
+        indxs[-1] = range(self.nz)
+        key_set = list(self.problem.parameters.keys())
+        extended_keys = ['chi','nu','del_chi','del_nu']
+        key_set.extend(extended_keys)
+        logger.debug("Outputing atmosphere parameters for {}".format(key_set))
+        for key in key_set:
+            # Figure out what type of data we're dealing with
+            if 'scale' in key:
+                continue
+            if key in extended_keys:
+                field_key = True
+            elif type(self.problem.parameters[key]) == Field:
+                field_key = True
+                self.problem.parameters[key].set_scales(1, keep_data=True)
+            else:
+                field_key = False
+
+            # Get the proper data
+            if field_key:
+                try:
+                    if key in extended_keys:
+                        self.problem.parameters[key+'_l'].require_layout(self.domain.dist.layouts[1])
+                        self.problem.parameters[key+'_r'].require_layout(self.domain.dist.layouts[1])
+                        array = self.problem.parameters[key+'_l'].data[indxs] +\
+                                self.problem.parameters[key+'_r'].data[indxs]
+                    else:
+                        self.problem.parameters[key].require_layout(self.domain.dist.layouts[1])
+                        array = self.problem.parameters[key].data[indxs]
+                except:
+                    if self.domain.dist.rank == 0:
+                        logger.error("key error on atmosphere output {}".format(key))
+                    array = 0
+                if self.domain.dist.rank == 0:
+                    f[key] = array
+            elif self.domain.dist.rank == 0:
+                f[key] = self.problem.parameters[key]
+        
+        z_value = self.domain.bases[-1].grid(1)
+        if self.domain.dist.rank == 0:
+            f['z'] = z_value
+
+        if self.domain.dist.rank == 0:
+            f['dimensions']     = self.dimensions
+            if self.dimensions > 1:
+                f['nx']             = self.nx
+            if self.dimensions > 2:
+                f['ny']             = self.ny
+            f['nz']             = self.nz
+            f['f']             = self.f
+            f['H']             = self.H
+            f['m_ad']           = self.m_ad
+            f['epsilon']        = self.epsilon
+            f['n_rho_cz']       = self.n_rho_cz
+            f['rayleigh']       = self.Rayleigh
+            f['prandtl']        = self.Prandtl
+            f['aspect_ratio']   = self.aspect_ratio
+            f['atmosphere_name']= self.atmosphere_name
+            f['t_buoy']         = self.buoyancy_time
+            f['t_therm']        = self.thermal_time
+            f.close()
+
 
