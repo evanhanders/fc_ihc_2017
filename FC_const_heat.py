@@ -1,20 +1,23 @@
 """
-Dedalus script for 2D or 3D compressible convection in a polytrope,
-with specified number of density scale heights of stratification.
+Dedalus script for 2D or 3D compressible convection in a stratified atmosphere
+with a constant heating term in the internal energy equation.  The user
+specifies the number of density scale heights of the convective zone, and then
+another parameter, f, which determines how much of the domain the convection
+zone spans, geometrically.  If f = 0, the CZ is the full domain.  If f = 1, 
+the CZ does not exist.
 
 Usage:
-    FC_poly.py [options] 
+    FC_const_heat.py [options] 
 
 Options:
     --Rayleigh=<Rayleigh>                Rayleigh number [default: 1e4]
     --Prandtl=<Prandtl>                  Prandtl number = nu/kappa [default: 1]
     --n_rho_cz=<n_rho_cz>                Density scale heights across unstable layer [default: 3]
-    --epsilon=<epsilon>                  The level of superadiabaticity of our polytrope background [default: 1e-4]
+    --epsilon=<epsilon>                  The magnitude of heating wrt background [default: 1e-4]
+    --f=<f>                              Fraction of the domain occupied by RZ [default: 0.5]
     --gamma=<gamma>                      Gamma of ideal gas (cp/cv) [default: 5/3]
     --aspect=<aspect_ratio>              Physical aspect ratio of the atmosphere [default: 4]
 
-
-                                         Rotation keywords
     --rotating                           Solve f-plane equations
     --Co=<Co>                            Convective Rossby number
     --Taylor=<Taylor>                    Taylor number [default: 1e4]
@@ -28,16 +31,16 @@ Options:
 
     --run_time=<run_time>                Run time, in hours [default: 23.5]
     --run_time_buoy=<run_time_buoy>      Run time, in buoyancy times
+    --run_time_therm=<run_time_buoy>     Run time, in thermal times
     --run_time_iter=<run_time_iter>      Run time, number of iterations; if not set, n_iter=np.inf
 
-    --fixed_T                            Fixed Temperature boundary conditions (top and bottom; default if no BCs specified)
-    --mixed_flux_T                       Fixed T (top) and flux (bottom) BCs
+    --mixed_flux_T                       Fixed T (top) and flux (bottom) BCs (default if no BCs specified)
+    --fixed_T                            Fixed Temperature boundary conditions (top and bottom)
     --fixed_flux                         Fixed flux boundary conditions (top and bottom)
-    --const_nu                           If flagged, use constant nu 
-    --const_chi                          If flagged, use constant chi 
-    --dynamic_diffusivities              If flagged, use equations formulated in terms of dynamic diffusivities (μ,κ)
-    --internal                           If flagged, use internal heating
-    --frac_subadiabat=<frac>             The fraction of the domain to be subadiabatic, must use mixed_flux_T bcs. [default: 0]
+    --const_nu                           If flagged, use constant (in depth) nu 
+    --const_chi                          If flagged, use constant (in depth) chi 
+    --no_dynamic_diffusivities           If flagged, DON'T use equations formulated in terms of dynamic diffusivities (μ,κ),
+                                             where chi/nu evolve in time but mu/kap are fixed in time
     
     --restart=<restart_file>             Restart from checkpoint
     --start_new_files                    Start new files while checkpointing
@@ -60,15 +63,14 @@ import logging
 
 import numpy as np
 
-def FC_polytrope(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
+def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  Taylor=None, theta=0,
                  nz=128, nx=None, ny=None, threeD=False, mesh=None,
-                 internal=False, frac_subadiabat=0,
-                 n_rho_cz=3, epsilon=1e-4, gamma=5/3,
-                 run_time=23.5, run_time_buoyancies=None, run_time_iter=np.inf,
+                 n_rho_cz=3, epsilon=1e-4, gamma=5/3, f=0.5,
+                 run_time=23.5, run_time_buoyancies=None, run_time_therm=None, run_time_iter=np.inf, 
                  fixed_T=False, fixed_flux=False, mixed_flux_T=False,
                  const_mu=True, const_kappa=True,
-                 dynamic_diffusivities=False, split_diffusivities=False,
+                 dynamic_diffusivities=True, split_diffusivities=False,
                  restart=None, start_new_files=False,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
@@ -82,7 +84,7 @@ def FC_polytrope(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     import time
     import os
     import sys
-    from stratified_dynamics import polytropes    
+    from stratified_dynamics import const_heat
     from tools.checkpointing import Checkpoint
     
     checkpoint_min   = 30
@@ -96,19 +98,19 @@ def FC_polytrope(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     if threeD and ny is None:
         ny = nx
 
-    if threeD:
-        atmosphere = polytropes.FC_polytrope_3d(nx=nx, ny=ny, nz=nz, mesh=mesh, constant_kappa=const_kappa, constant_mu=const_mu, internal=internal,frac_subadiabat=frac_subadiabat,\
-                                        epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
-                                        fig_dir=data_dir)
+#    if threeD:
+#        atmosphere = polytropes.FC_polytrope_3d(nx=nx, ny=ny, nz=nz, mesh=mesh, constant_kappa=const_kappa, constant_mu=const_mu, internal=internal,frac_subadiabat=frac_subadiabat,\
+#                                        epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
+#                                        fig_dir=data_dir)
+#    else:
+    if dynamic_diffusivities:
+        atmosphere = const_heat.FC_ConstHeating_2d_kappa_mu(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,\
+                                    epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
+                                    f=f, fig_dir=data_dir)
     else:
-        if dynamic_diffusivities:
-            atmosphere = polytropes.FC_polytrope_2d_kappa_mu(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,  internal=internal,frac_subadiabat=frac_subadiabat,\
-                                        epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
-                                        fig_dir=data_dir)
-        else:
-            atmosphere = polytropes.FC_polytrope_2d(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,  internal=internal,frac_subadiabat=frac_subadiabat,\
-                                        epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
-                                        fig_dir=data_dir)
+        atmosphere = const_heat.FC_ConstHeating_2d(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,\
+                                    epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
+                                    f=f, fig_dir=data_dir)
     if epsilon < 1e-4:
         ncc_cutoff = 1e-14
     elif epsilon > 1e-1:
@@ -123,10 +125,10 @@ def FC_polytrope(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     
     if fixed_flux:
         atmosphere.set_BC(fixed_flux=True, stress_free=True)
-    elif mixed_flux_T:
-        atmosphere.set_BC(mixed_flux_temperature=True, stress_free=True)
-    else:
+    elif fixed_T:
         atmosphere.set_BC(fixed_temperature=True, stress_free=True)
+    else:
+        atmosphere.set_BC(mixed_flux_temperature=True, stress_free=True)
 
     problem = atmosphere.get_problem()
 
@@ -171,6 +173,8 @@ def FC_polytrope(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     
     if run_time_buoyancies != None:
         solver.stop_sim_time    = solver.sim_time + run_time_buoyancies*atmosphere.buoyancy_time
+    elif run_time_therm != None:
+        solver.stop_sim_time    = solver.sim_time + run_time_therm*atmosphere.thermal_time
     else:
         solver.stop_sim_time    = 100*atmosphere.thermal_time
     
@@ -353,12 +357,12 @@ if __name__ == "__main__":
     #BCs
 
     if args['--fixed_T'] and args['--verbose']:
-        data_dir += '_fixed'
+        data_dir += '_fixedT'
     elif args['--fixed_flux']:
         data_dir += '_flux'
 
-    if args['--dynamic_diffusivities']:
-        data_dir += '_dynamic'
+    if args['--no_dynamic_diffusivities']:
+        data_dir += '_NOTdynamic'
     if args['--verbose']:
         #Diffusivities
         if args['--const_nu']:
@@ -391,17 +395,9 @@ if __name__ == "__main__":
     else:
         Taylor = None
         data_dir += "_nrhocz{}_Ra{}_Pr{}".format(args['--n_rho_cz'], args['--Rayleigh'], args['--Prandtl'])
-    data_dir += "_eps{}_a{}".format(args['--epsilon'], args['--aspect'])
+    data_dir += "_eps{}_a{}_f{}".format(args['--epsilon'], args['--aspect'], args['--f'])
 
 
-    # Add info about Internal heating to run dir string
-    if args['--internal']:
-        data_dir += '_IH'
-    frac_subadiabat=float(args['--frac_subadiabat'])
-    if frac_subadiabat != 0:
-        data_dir += '_f{}'.format(args['--frac_subadiabat'])
-
-    
     if args['--label'] == None:
         data_dir += '/'
     else:
@@ -461,6 +457,9 @@ if __name__ == "__main__":
     run_time_buoy = args['--run_time_buoy']
     if run_time_buoy != None:
         run_time_buoy = float(run_time_buoy)
+    run_time_therm = args['--run_time_therm']
+    if run_time_therm != None:
+        run_time_therm = float(run_time_therm)
         
     run_time_iter = args['--run_time_iter']
     if run_time_iter != None:
@@ -468,7 +467,7 @@ if __name__ == "__main__":
     else:
         run_time_iter = np_inf
         
-    FC_polytrope(Rayleigh=float(args['--Rayleigh']),
+    FC_const_heat(Rayleigh=float(args['--Rayleigh']),
                  Prandtl=float(args['--Prandtl']),
                  Taylor=Taylor,
                  theta=float(args['--theta']),
@@ -481,15 +480,17 @@ if __name__ == "__main__":
                  n_rho_cz=float(args['--n_rho_cz']),
                  epsilon=float(args['--epsilon']),
                  gamma=float(Fraction(args['--gamma'])),
+                 f=float(args['--f']),
                  run_time=float(args['--run_time']),
                  run_time_buoyancies=run_time_buoy,
+                 run_time_therm=run_time_therm,
                  run_time_iter=run_time_iter,
                  fixed_T=args['--fixed_T'],
                  fixed_flux=args['--fixed_flux'],
                  mixed_flux_T=args['--mixed_flux_T'],
                  const_mu=const_mu,
                  const_kappa=const_kappa,
-                 dynamic_diffusivities=args['--dynamic_diffusivities'],
+                 dynamic_diffusivities=not(args['--no_dynamic_diffusivities']),
                  restart=(args['--restart']),
                  start_new_files=start_new_files,
                  rk222=rk222,
@@ -501,6 +502,4 @@ if __name__ == "__main__":
                  no_volumes=args['--no_volumes'],
                  no_join=args['--no_join'],
                  split_diffusivities=args['--split_diffusivities'],
-                 verbose=args['--verbose'],
-                 internal=args['--internal'],
-                 frac_subadiabat=float(args['--frac_subadiabat']))
+                 verbose=args['--verbose'])

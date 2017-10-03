@@ -63,8 +63,10 @@ class Atmosphere:
         self.necessary_quantities['phi'] = self.phi
 
         self.del_ln_rho0 = self._new_ncc()
+        self.ln_rho0 = self._new_ncc()
         self.rho0 = self._new_ncc()
         self.necessary_quantities['del_ln_rho0'] = self.del_ln_rho0
+        self.necessary_quantities['ln_rho0'] = self.ln_rho0
         self.necessary_quantities['rho0'] = self.rho0
 
         self.del_s0 = self._new_ncc()
@@ -365,15 +367,22 @@ class ConstHeating(Atmosphere):
         self._set_atmosphere()
         self._set_timescales()
 
+    def depth_root_find(self, L):
+        H = self.epsilon / (L * self.Cp)
+        xi = np.sqrt(2*H + 1)
+        return self.n_rho_cz + np.log(1 - (H/2)*L**2 + L) \
+               - (self.g/xi)*np.log((xi**2 - 1 + H*L*(xi + 1))/(xi**2 - 1 - H*L*(xi - 1)))
+
     def _calculate_Lz_cz(self, n_rho_cz, m_ad):
         '''
-        Calculate Lz based on the number of density scale heights and an adiabatic polytrope.
-        That's how much atmosphere there is of unstable layer, then use f to get the amount
-        of atmosphere below that.
+        Calculate the Lz of the CZ based on the number of specified density scale heights
+        using root-finding, then extend the atmosphere below that an appropriate amount
+        based on the value of f to make room for the RZ.
         '''
-        #The absolute value allows for negative m_cz.
-        Lz_cz = np.exp(n_rho_cz/np.abs(m_ad))-1
-        return Lz_cz
+        from scipy.optimize import brentq
+        Lz_guess = (np.exp(n_rho_cz/np.abs((m_ad-self.epsilon)))-1)*(self.g/self.Cp)
+        r = brentq(self.depth_root_find, Lz_guess/2, Lz_guess*2, maxiter=int(1e3), full_output=True)
+        return r[0] / (1 - self.f)
     
     def _set_atmosphere_parameters(self, gamma, epsilon):
         # polytropic atmosphere characteristics
@@ -398,7 +407,7 @@ class ConstHeating(Atmosphere):
         self.T0_z.set_scales(1, keep_data=True)
         self.T0.set_scales(1, keep_data=True)
         self.del_ln_rho0['g'] = - (self.g + self.T0_z['g']) / self.T0['g']
-        self.del_ln_rho0.antidifferentiate('z', ('right', '0'), out=self.ln_rho0)
+        self.del_ln_rho0.antidifferentiate('z', ('right', 0), out=self.ln_rho0)
         self.ln_rho0.set_scales(1, keep_data=True)
         self.rho0['g'] = np.exp(self.ln_rho0['g'])
 
@@ -407,7 +416,9 @@ class ConstHeating(Atmosphere):
         self.ln_rho0.set_scales(1, keep_data=True)
         #Note: this is grad S, not grad S / cP
         self.del_s0['g'] = (1/(self.gamma-1)) * self.T0_z['g']/self.T0['g'] - self.ln_rho0['g']
-        self.delta_s = self.del_s0.integrate('z', ('right', '0'))
+        s0 = self._new_ncc()
+        self.del_s0.antidifferentiate('z', ('right', 0), out=s0)
+        self.delta_s = s0.interpolate(z=self.Lz)['g'][0][0] - s0.interpolate(z=self.z_cross)['g'][0][0]
         print(self.delta_s)
  
         self.T0.set_scales(1, keep_data=True)
@@ -418,40 +429,46 @@ class ConstHeating(Atmosphere):
         self.P0.set_scales(1, keep_data=True)
         
         if self.constant_diffusivities:
-            self.scale['g']            = (self.z0 - self.z)
-            self.scale_continuity['g'] = (self.z0 - self.z)
-            self.scale_momentum['g']   = (self.z0 - self.z)
-            self.scale_energy['g']     = (self.z0 - self.z)
+            scale = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+            self.scale['g']            = scale
+            self.scale_continuity['g'] = scale
+            self.scale_momentum['g']   = scale
+            self.scale_energy['g']     = scale
         else:
             # consider whether to scale nccs involving chi differently (e.g., energy equation)
-            self.scale['g']            = (self.z0 - self.z)
-            self.scale_continuity['g'] = (self.z0 - self.z)
-            self.scale_momentum['g']   = (self.z0 - self.z)# **np.ceil(self.m_cz)
-            self.scale_energy['g']     = (self.z0 - self.z)# **np.ceil(self.m_cz)
+            scale = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+            self.scale['g']            = scale
+            self.scale_continuity['g'] = scale
+            self.scale_momentum['g']   = scale
+            self.scale_energy['g']     = scale
 
         # choose a particular gauge for phi (g*z0); and -grad(phi)=g_vec=-g*z_hat
         # double negative is correct.
-        self.phi['g'] = -self.g*(self.z0 - self.z)
+        self.phi['g'] = -self.g*(self.Lz + 1 - self.z)
 
         rho0_max, rho0_min = self.value_at_boundary(self.rho0)
         if rho0_max is not None:
             try:
 		# For "strange" resolutions (e.g., 96x192), sometimes this crashes.  Need to investigate. (9/12/2017)
+                # TODO: make this work for our case
                 rho0_ratio = rho0_max/rho0_min
                 logger.info("   density: min {}  max {}".format(rho0_min, rho0_max))
                 logger.info("   density scale heights = {:g} (measured)".format(np.log(rho0_ratio)))
-                logger.info("   density scale heights = {:g} (target)".format(np.log((self.z0)**self.poly_m)))
             except:
                 if self.domain.distributor.comm_cart.rank == 0:
                     logger.error("Something went wrong with reporting density range")
            
         #TODO: Fix this, make it general and calculate it from fields.
-        H_rho_top = (self.z0-self.Lz)/self.poly_m
-        H_rho_bottom = (self.z0)/self.poly_m
-        logger.info("   H_rho = {:g} (top)  {:g} (bottom)".format(H_rho_top,H_rho_bottom))
+        #       OR use the analytical expression of grad ln rho to do this.
+        H_rho_top = - 1 / ( self.g - 1 )
+        H_rho_bottom = - (1 - (self.H/2)*self.Lz**2 + self.Lz) / (self.g - 1 + self.H * self.Lz)
+        H_rho_bot_CZ = - (1 - (self.H/2)*self.Lz**2 + self.Lz - (self.H/2)*self.z_cross**2 - (1 - self.H*self.Lz)*self.z_cross) / \
+                         ( self.g - 1 + self.H*(self.d_conv) )
+        logger.info("   H_rho = {:g} (top)  {:g} (bottom)   {:g} (bot CZ)".format(H_rho_top,H_rho_bottom, H_rho_bot_CZ))
         if self.delta_x != None:
-            logger.info("   H_rho/delta x = {:g} (top)  {:g} (bottom)".format(H_rho_top/self.delta_x,
-                                                                          H_rho_bottom/self.delta_x))
+            logger.info("   H_rho/delta x = {:g} (top)  {:g} (bottom)    {:g} (bot CZ)".format(H_rho_top/self.delta_x,
+                                                                          H_rho_bottom/self.delta_x,
+                                                                          H_rho_bot_CZ/self.delta_x))
         
     def _set_timescales(self, atmosphere=None):
         if atmosphere is None:
@@ -459,8 +476,8 @@ class ConstHeating(Atmosphere):
             
         # min of global quantity
         atmosphere.min_BV_time = self.domain.dist.comm_cart.allreduce(np.min(np.sqrt(np.abs(self.g*self.del_s0['g']/self.Cp))), op=MPI.MIN)
-        atmosphere.freefall_time = np.sqrt(self.Lz/self.g)
-        atmosphere.buoyancy_time = np.sqrt(np.abs(self.Lz*self.Cp / (self.g * self.delta_s)))
+        atmosphere.freefall_time = np.sqrt(self.d_conv/self.g)
+        atmosphere.buoyancy_time = np.sqrt(np.abs(self.d_conv / (self.g * self.epsilon)))
         
         logger.info("atmospheric timescales:")
         logger.info("   min_BV_time = {:g}, freefall_time = {:g}, buoyancy_time = {:g}".format(atmosphere.min_BV_time,
@@ -548,10 +565,10 @@ class ConstHeating(Atmosphere):
         self.nu_r.set_scales(1, keep_data=True)
 
         # determine characteristic timescales; use chi and nu at middle of domain for bulk timescales.
-        self.thermal_time = self.Lz**2/(self.chi.interpolate(z=self.Lz/2)['g'][0])
+        self.thermal_time = self.d_conv**2/(self.chi.interpolate(z=self.z_cross)['g'][0])
         self.top_thermal_time = 1/chi_top
 
-        self.viscous_time = self.Lz**2/(self.nu.interpolate(z=self.Lz/2)['g'][0])
+        self.viscous_time = self.d_conv**2/(self.nu.interpolate(z=self.z_cross)['g'][0])
         self.top_viscous_time = 1/nu_top
 
         if self.dimensions == 2:

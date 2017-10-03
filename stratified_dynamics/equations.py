@@ -195,14 +195,8 @@ class FC_equations(Equations):
 
         self.IH_flux.differentiate('z', out=self.IH)
         self.IH['g'] *= -1  # Go from a LHS flux term to a RHS source term
-        if not self.internal:
-            self.problem.substitutions['IH'] = "0"
-            self.problem.substitutions['IH_flux'] = "0"
-            self.problem.substitutions['Q']       = "0"
-        else:
-            self.problem.parameters['IH'] = self.IH
-            self.problem.parameters['IH_flux'] = self.IH_flux
-            self.problem.parameters['Q']       = self.source_flux
+        self.problem.parameters['IH'] = self.IH
+        self.problem.parameters['IH_flux'] = self.IH_flux
 
         # Thermo subs that are used later, but before set_subs() is called; okay or not okay?
         self.problem.parameters['delta_s_atm'] = self.delta_s
@@ -375,8 +369,8 @@ class FC_equations(Equations):
             l_flux_rhs_str = "0"
             r_flux_rhs_str = "0"
         else:
-            l_flux_rhs_str = " left(((1 + Q - IH_flux)*exp(-ln_rho1)-1+ln_rho1)*T0_z)"
-            r_flux_rhs_str = "right(((1 + Q - IH_flux)*exp(-ln_rho1)-1+ln_rho1)*T0_z)"
+            l_flux_rhs_str = " left((exp(-ln_rho1)-1+ln_rho1)*T0_z)"
+            r_flux_rhs_str = "right((exp(-ln_rho1)-1+ln_rho1)*T0_z)"
             # thermal boundary conditions
         if fixed_flux:
             logger.info("Thermal BC: fixed flux (full form)")
@@ -501,8 +495,7 @@ class FC_equations(Equations):
         analysis_profile.add_task("plane_avg(w*(IE))", name="IE_flux_z")
         analysis_profile.add_task("plane_avg(w*(P))",  name="P_flux_z")
         analysis_profile.add_task("plane_avg(h_flux_z)",  name="enthalpy_flux_z")
-        if self.internal:
-            analysis_profile.add_task("plane_avg(IH_flux)",  name="IH_flux_z")
+        analysis_profile.add_task("plane_avg(IH_flux)",  name="IH_flux_z")
         analysis_profile.add_task("plane_avg(viscous_flux_z)",  name="viscous_flux_z")
         analysis_profile.add_task("plane_avg(kappa_flux_z)", name="kappa_flux_z")
         analysis_profile.add_task("plane_avg(kappa_flux_fluc)", name="kappa_flux_fluc_z")
@@ -713,8 +706,8 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
         # thermal boundary conditions
         if fixed_flux:
             logger.info("Thermal BC: fixed flux (full form)")
-            self.problem.add_bc( "left(T1_z) = left(IH_flux - Q)")
-            self.problem.add_bc("right(T1_z) = right(IH_flux - Q)")
+            self.problem.add_bc( "left(T1_z) = 0")
+            self.problem.add_bc("right(T1_z) = 0")
             self.dirichlet_set.append('T1_z')
         elif fixed_temperature:
             logger.info("Thermal BC: fixed temperature (T1)")
@@ -723,14 +716,14 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
             self.dirichlet_set.append('T1')
         elif mixed_flux_temperature:
             logger.info("Thermal BC: fixed flux/fixed temperature")
-            self.problem.add_bc("left(T1_z) = left(IH_flux - Q)")
+            self.problem.add_bc("left(T1_z) = 0")
             self.problem.add_bc("right(T1)  = 0")
             self.dirichlet_set.append('T1_z')
             self.dirichlet_set.append('T1')
         elif mixed_temperature_flux:
             logger.info("Thermal BC: fixed temperature/fixed flux")
             self.problem.add_bc("left(T1)    = 0")
-            self.problem.add_bc("right(T1_z) = right(IH_flux - Q)")
+            self.problem.add_bc("right(T1_z) = 0")
             self.dirichlet_set.append('T1_z')
             self.dirichlet_set.append('T1')
         else:
