@@ -171,14 +171,51 @@ In general, this profile is valid for any value of $\rho_t$, such that
 \begin{equation}
 \xi = \ln\rho_t + \ln T_t - \frac{g}{\chi}\ln\left(\frac{\chi - 1}{\chi + 1}\right),
 \end{equation}
-where $\grad T_c(L_z) = -1$ has already been previously specified.
+where $\grad T_c(L_z) = -1$ has already been previously specified.  This means that the general,
+full form of the log density is
+\begin{equation}
+\ln\left(\frac{\rho_c}{\rho_t}\right) = -\ln\left(\frac{T_c}{T_t}\right) + 
+\frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\cdot\frac{\chi + 1}{\chi - 1}\right)
+\end{equation}
 
+\subsubsection{Specifying the depth of the atmosphere}
+I still want $n_\rho$ to be the parameter that specifies the depth of the parameter,
+and I specifically want it to specify the number of density scale heights in the part of the
+atmosphere that carries a superadiabatic flux.  
+
+To get started, I need to consider the value of $\ln\rho_c$ at the bottom of the atmosphere,
+$$
+\ln\rho_c(z=0) = n_\rho = -\ln\left(\frac{T_c(z=0)}{T_t}\right)
++ \frac{g}{\chi}\ln\left(\frac{(\chi + \grad T_c(z=0))(\chi + 1)}{(\chi - \grad T_c(z=0))(\chi - 1)}\right)
+$$
+And we have a problem here, right?  The stuff on the RHS is a complex function of $\epsilon$ and
+$L_z$, and we're trying to specify $L_z$ using $n_\rho$, not the other way around.
+I'm going to consistently move all of the terms from the RHS to the LHS, then
+non-dimensionalize and assume $T_t = \rho_t = 1$, making the function
+\begin{equation}
+f(L_{z}) = n_\rho + \ln\left(T_t - \frac{H}{2}L_z^2 + L_z\right) - 
+\frac{g}{\chi}\ln\left(\frac{\chi^2 - 1 + HL_z(\chi + 1)}{\chi^2 - 1 - HL_z(\chi - 1)}\right).
+\end{equation}
+When this function is zero, $L_z$ appropriately captures the right number of density scale heights.
+
+Since we have set up all of our non-dimensionalizations at the \emph{top} of the atmosphere, and we
+are building atmospheres which have CZs above RZs, we can actually really simply specify the
+density stratification of the CZ.  The CZ is an atmosphere with $f = 0$ whose $z = 0$ starts
+at $z_{cross}$.  If we set $n_\rho = n_{\rho, cz}$ and set $f = 0$, and then find the appropriate
+$L_z$ from $f(L_z)$, that will give us $L_{z-cz}$.  And since that is a \emph{depth} from
+the top of the atmosphere, we can use that depth to determine how big the rest of the
+atmosphere should be for our ``true'' value of $f$. That is,
+\begin{equation}
+L_z = \frac{L_{z-cz}}{1 - f}.
+\end{equation}
+This way, by adding the RZ, we're actually extending the atmosphere captured down into the RZ,
+rather than gobbling up part of the CZ with the RZ.  In order to find $L_{z-cz}$, a
+numerical root-finding algorithm is the logical choice.
 
 \subsection{Musings}
 
 There are still three parameters in these systems that need to be figured out:
 \begin{enumerate}
-\item Density stratification
 \item thermal diffusivity
 \item viscous diffusvitiy
 \end{enumerate}
