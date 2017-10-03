@@ -60,6 +60,8 @@ An abstract will go here eventually
 
 \section{Experiment} 
 \label{sec:experiment}
+
+\subsection{General system info and temperature profile}
 We choose a parameter, $\epsilon$, which sets the initial scale of gravity,
 \begin{equation}
 g \equiv m_{ad} + 1 - \epsilon,
@@ -83,6 +85,15 @@ This initial conductive solution is \emph{not} the adiabatic solution to this at
 \begin{equation}
 \grad T_{ad} = -\frac{g}{c_P} = -1 + \frac{\epsilon}{c_P}.
 \end{equation}
+If we integrate the conductive solution, our initial temperature profile is
+$$
+T_c(z) = (H L_z - 1) z - \frac{H}{2}z^2 + C
+$$
+and if we want $T_c(L_z) = T_t$,
+\begin{equation}
+T_c(z) = -\frac{H}{2}z^2 - (1 - H L_z) z + \left(T_t - \frac{H}{2}L_z^2 + L_z\right).
+\end{equation}
+So our initial temperature gradient is now quadratic.
 
 The initial \emph{superadiabatic temperature gradient} is an important quantity, as it
 determines whether or not the atmosphere is stable to convection.  This gradient
@@ -119,6 +130,75 @@ By specifying these two parameters, we retrieve the magnitude of the internal he
 $ f = 1 - \epsilon / (H c_P L_z)$
 \begin{equation}
 H = \frac{\epsilon}{L_z c_P (1 - f)}.
+\end{equation}
+
+\subsection{Initial density stratification}
+
+The initial density profile is set by hydrostatic equilibrium,
+\begin{equation}
+\grad\ln\rho_c = -\frac{g + \grad T_c}{T_c},
+\end{equation}
+which we numerically integrate to find $\ln\rho_c$ and $\rho_c$.  By the way, the reason
+we do this numerically is because, according to wolfram,
+$$
+\int\frac{A + Bz}{C + Dz + Ez^2} = \frac{B}{2E}\ln\left(C + zD + Ez^2\right)
+- \frac{(BD - 2AE)}{E\sqrt{4CE - D^2}}\tan^{-1}\left(\frac{D + 2 Ez}{\sqrt{4CE - D^2}}\right)
+$$
+And for this,
+$$
+A = -\left(g - 1 + HLz\right)\qquad B = H \qquad C = \left(T_t - \frac{H}{2}L_z^2 + L_z\right)
+\qquad D = (HL_z - 1) \qquad E = -\frac{H}{2}
+$$
+which is to say that $E = -B/2$ and $A = -(D + g)$.  Simplifying the density profile
+form a bit,
+$$
+\ln\rho_c = -\ln(T_c) - \frac{-2D - 2A}{\sqrt{4CE - D^2}}\tan^{-1}\left(\frac{D + 2Ez}{\sqrt{4CE - D^2}}\right)
+$$
+So that first term, the $\ln T_c$ term, cancels nicely.  the other term is kind of a mess, and to see
+it more clearly, note that
+$$
+A + D = -g \qquad 4CE - D^2 = -2H\left(T_t - \frac{H}{2}L_z^2 + L_z\right) - (H^2 L_z^2 + 1 - 2HL_z)
+= - 2(HT_t + 1),
+$$
+and that's sort of problematic, and also imaginary once we take the square root of it.  Note also
+that $D + 2Ez = HL_z - 1 - Hz = H(L_z - z) - 1$, so the total function is
+$$
+\ln\rho_c = -\ln(T_c) - \frac{2g}{\sqrt{-2(HT_t + 1)}}\tan^{-1}\left(\frac{H(L_z - z) - 1}{\sqrt{-2(HT_t + 1)}}\right)
++ const
+$$
+
+Acknowledging that we're dealing with nasty imaginary numbers, note that $\tan^{-1}(A\sqrt{-1}) = i \tanh^{-1}(A)$,
+so this function is really
+\begin{equation}
+\ln\rho_c = -\ln(T_c) - \frac{2g}{\sqrt{2(HT_t + 1)}}\tanh^{-1}\left(\frac{H(L_z - z) - 1}{\sqrt{2(H T_t + 1)}}\right) + C
+\end{equation}
+To make things easier for myself, I will define $\chi \equiv \sqrt{2(HT_t + 1)}$, and then I will note
+$\tanh^{-1}$ has a kinda cool formula,
+$$
+\tanh^{-1}(A) = \frac{1}{2}\left(\ln(A + 1) - \ln(1 - A)\right) = \frac{1}{2}\ln\left(\frac{A + 1}{1 - A}\right)
+= \frac{1}{2}\ln\left(\frac{B + C}{C - B}\right),
+$$
+where $A \equiv B / C$, so
+$$
+\tanh^{-1}\left(\frac{\grad T_c}{\chi}\right) =
+\frac{1}{2}\ln\left(\frac{\grad T_c + \chi}{\chi - \grad T_c}\right)
+$$
+So our function looks like
+\begin{equation}
+\ln\rho_c = -\ln(T_c) - \frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\right) + C
+\end{equation}
+At this point, I'm going to \emph{assume that $\rho_t = 1$, so $\ln\rho_c(L_z) = 0$}, and while
+this kills some of our generality, it makes life a bit better.  also recall that we
+have specified $\grad T_c = -1$ at the top of the atmosphere, so
+$$
+C = \ln(T_t) + \frac{g}{\chi}\ln\left(\frac{\chi - 1}{\chi + 1}\right)
+$$
+And in the end, our initial density profile is specified by
+\begin{equation}
+\ln\rho_c = -\ln\left(\frac{T_c}{T_t}\right) - \frac{g}{\chi}\ln\left(
+\frac{\grad T_c + \chi}{\chi- \grad T_c}\cdot
+\frac{\chi + 1}{\chi - 1}
+\right)
 \end{equation}
 
 There are still three parameters in these systems that need to be figured out:

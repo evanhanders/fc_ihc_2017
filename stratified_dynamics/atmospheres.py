@@ -368,6 +368,8 @@ class ConstHeating(Atmosphere):
     def _calculate_Lz_cz(self, n_rho_cz, m_ad):
         '''
         Calculate Lz based on the number of density scale heights and an adiabatic polytrope.
+        That's how much atmosphere there is of unstable layer, then use f to get the amount
+        of atmosphere below that.
         '''
         #The absolute value allows for negative m_cz.
         Lz_cz = np.exp(n_rho_cz/np.abs(m_ad))-1
