@@ -537,7 +537,8 @@ class ConstHeating(Atmosphere):
       
             logger.info("   nu_top = {:g}, chi_top = {:g}".format(nu_top, chi_top))
 
-        self.IH_flux['g'] = - self.chi_top * self.H * self.z
+        self.T0_z.set_scales(1, keep_data=True)
+        self.IH_flux['g'] = - self.chi_top * self.T0_z['g']
 
         #TODO: look at everything below this
                     

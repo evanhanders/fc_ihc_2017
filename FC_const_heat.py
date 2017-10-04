@@ -356,7 +356,7 @@ if __name__ == "__main__":
 
     #BCs
 
-    if args['--fixed_T'] and args['--verbose']:
+    if args['--fixed_T']:
         data_dir += '_fixedT'
     elif args['--fixed_flux']:
         data_dir += '_flux'

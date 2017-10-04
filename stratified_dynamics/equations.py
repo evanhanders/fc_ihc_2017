@@ -194,7 +194,6 @@ class FC_equations(Equations):
         self.problem.parameters['del_nu_r'] = self.del_nu_r
 
         self.IH_flux.differentiate('z', out=self.IH)
-        self.IH['g'] *= -1  # Go from a LHS flux term to a RHS source term
         self.problem.parameters['IH'] = self.IH
         self.problem.parameters['IH_flux'] = self.IH_flux
 
@@ -495,6 +494,7 @@ class FC_equations(Equations):
         analysis_profile.add_task("plane_avg(w*(IE))", name="IE_flux_z")
         analysis_profile.add_task("plane_avg(w*(P))",  name="P_flux_z")
         analysis_profile.add_task("plane_avg(h_flux_z)",  name="enthalpy_flux_z")
+        analysis_profile.add_task("plane_avg(-IH_flux)",  name="IH_flux_z_LHS")
         analysis_profile.add_task("plane_avg(IH_flux)",  name="IH_flux_z")
         analysis_profile.add_task("plane_avg(viscous_flux_z)",  name="viscous_flux_z")
         analysis_profile.add_task("plane_avg(kappa_flux_z)", name="kappa_flux_z")
