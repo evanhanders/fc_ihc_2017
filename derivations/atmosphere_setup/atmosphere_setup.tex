@@ -312,6 +312,37 @@ $$
 And, for the record, that's about the order of magnitude I was anticipating it to be, and this is about the
 same order of magnitude as we expect the perturbations in $T$ and $\rho$ to be.  Sweet!
 
+Unfortunately though, just doing some numerical tests, it looks like $\Delta S_c/c_P$ actually scales more like
+$d_{\text{conv}}H$.  Which means either (A) I'm missing some really meaningful prefactors or (B) I messed up
+somewhere.
+
+\subsubsection{Alternate approach}
+In an alternate universe, it's possible that I would prefer less self-abuse.  In that universe, I'd
+recognize that
+$$
+\frac{S_c}{c_P} = \frac{1}{\gamma} \ln T_c - \frac{\gamma - 1}{\gamma} \ln \rho_c.
+$$
+And, thus, I'd see that
+$$
+\frac{\Delta S_c}{c_P} = -\frac{1}{\gamma}\ln T_c(z = z_{\text{cross}}) + \frac{\gamma - 1}{\gamma} n_{\rho}
+= -\frac{1}{\gamma}\ln\left(1 + d_{\text{conv}} - \frac{H}{2}d_{\text{conv}^2}\right) + \frac{n_{\rho}}{c_P}
+$$
+and since $\ln(A + B) = \ln(A(1 + B/A)) = \ln(A) + \ln(1 + B/A)$ we can break up the first term as
+$$
+\frac{\Delta S_c}{c_P} = -\frac{1}{\gamma}\ln(1 + d_{\text{conv}}) - \frac{1}{\gamma}\ln\left(1 - \frac{(H/2)d_{\text{conv}}^2}{1 + d_{\text{conv}}}\right)
++ \frac{n_\rho}{c_P}
+$$
+At this point, I'm going to make an assumption.  It's not quite true for large $\epsilon$.  But,
+$\ln(1 + L_z) \approx n_{\rho} / (m_{ad} - \epsilon)$.  This is exactly true for polytropes, but
+not for these systems.  Either way,
+$$
+\frac{\Delta S_c}{c_P} \approx - \frac{1}{\gamma}\ln\left(1 - \frac{(H/2)d_{\text{conv}}^2}{1 + d_{\text{conv}}}\right)
+-\frac{n_{\rho}}{\gamma(m_{ad}-\epsilon)} + \frac{n_{\rho}}{c_P} = 
+- \frac{1}{\gamma}\ln\left(1 - \frac{(H/2)d_{\text{conv}}^2}{1 + d_{\text{conv}}}\right) - \frac{\epsilon n_\rho}{c_P}\left(\frac{\gamma - 1}{\gamma - \epsilon(\gamma - 1)}\right)
+$$
+...and I'm kind of stuck again.  Anyways, the important thing I just learned here (from some numerics) is that
+$\Delta S_c \approx -\epsilon n_{\rho}$, which kind of actually makes sense from the form of the equation.
+
 \subsection{Thermal Equilibrium}
 The next thing to ask is: is our conductive profile in thermal equilibrium?  If we have an energy equation of the
 form:
@@ -327,6 +358,21 @@ the same as what we had in a polytrope, but it is similar.
 \item $\kappa$ should be constant in time for easy analyses, which means that $\chi$ is free
 to evolve as the density profile changes.
 \end{enumerate}
+
+\subsection{Pressure profile}
+It's not mega important, but according to hydrostatic equilibrium,
+\begin{equation}
+\grad \ln P_c = -\frac{g}{T_c}.
+\end{equation}
+Cool.  So basically the pressure profile is just the complicated, gross part of the density
+profile from above.
+
+\subsection{Entropy budget \& boundary conditions}
+I need to think carefully on this.  I think I may actually need to do fixed temperature
+boundary conditions, but...I'm not sure.  I really need to think carefully.
+
+I need to consider how much mass I have, and how my atmosphere is going to evolve in response
+to the boundary conditions that I put on the edges of it.
 
 \bibliography{../biblio.bib}
 \end{document}
