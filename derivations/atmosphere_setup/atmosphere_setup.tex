@@ -79,7 +79,8 @@ conductive flux must balance the internal heating term,
 \end{equation}
 A useful form of the initial temperature gradient in such a system is
 \begin{equation}
-\grad T_{c} = - 1 + H (L_z - z).
+\boxed{
+\grad T_{c} = - 1 + H (L_z - z)} .
 \end{equation}
 This initial conductive solution is \emph{not} the adiabatic solution to this atmosphere,
 \begin{equation}
@@ -91,7 +92,8 @@ T_c(z) = (H L_z - 1) z - \frac{H}{2}z^2 + C
 $$
 and if we want $T_c(L_z) = T_t$,
 \begin{equation}
-T_c(z) = -\frac{H}{2}z^2 - (1 - H L_z) z + \left(T_t - \frac{H}{2}L_z^2 + L_z\right).
+\boxed{
+T_c(z) = -\frac{H}{2}z^2 - (1 - H L_z) z + \left(T_t - \frac{H}{2}L_z^2 + L_z\right)}.
 \end{equation}
 So our initial temperature gradient is now quadratic.
 
@@ -114,8 +116,17 @@ $\epsilon / ( H c_P ) < L_z$, the whole atmosphere is unstable to convection.
 Further, the anticipated length scale of the convecting region of the atmosphere
 is the full atmosphere above $z_{\text{cross}}$, or
 \begin{equation}
-d_{\text{conv}} = L_z - z_{\text{cross}} = \frac{\epsilon}{H c_P}
+d_{\text{conv}} = L_z - z_{\text{cross}} = \frac{\epsilon}{H c_P}.
 \end{equation}
+It's maybe not super important, but the temperature at the base of the convection zone is
+$$
+T_c(z_{\text{cross}}) = -\frac{H}{2}z_{\text{cross}}^2 - (1 - HL_z)z_{\text{cross}}
++ \left(T_t - \frac{H}{2}L_z^2 + L_z\right) = T_t + d_{\text{conv}} - \frac{H}{2} d_{\text{conv}}^2.
+$$
+The temperature gradient there is
+$$
+\grad T_c(z_{\text{cross}}) = -\left(1 - \frac{\epsilon}{c_P}\right) = \grad T_{\text{ad}}
+$$
 
 I think there are two natural control parameters of this system:
 \begin{enumerate}
@@ -129,7 +140,8 @@ the depth of the stable layer.
 By specifying these two parameters, we retrieve the magnitude of the internal heating,
 $ f = 1 - \epsilon / (H c_P L_z)$
 \begin{equation}
-H = \frac{\epsilon}{L_z c_P (1 - f)}.
+\boxed{
+H = \frac{\epsilon}{L_z c_P (1 - f)} = \frac{\epsilon}{d_{\text{conv}}c_P}}.
 \end{equation}
 
 \subsection{Initial density stratification}
@@ -152,30 +164,31 @@ A = -H / 2 \qquad B = (HL_z - 1) \qquad C = \left(T_t - \frac{H}{2}L_z^2 + L_z\r
 $$
 and note that $2Az + B = -Hz + (HL_z - 1) = \grad T_c$.  Note also that
 $4AC - B^2 = -2H(T_t - (H/2)L_z^2 + L_z) - (H^2 L_z^2 - 2HL_z + 1) = -2HT_t - 1$,
-so $\sqrt{4AC - B^2} = i\chi$, where $i = \sqrt{-1}$ and $\chi = \sqrt{1 + 2HT_t}$.
+so $\sqrt{4AC - B^2} = i\xi$, where $i = \sqrt{-1}$ and $\xi = \sqrt{1 + 2HT_t}$.
 With these definitions in hand, we find that
 \begin{equation}
-\ln\rho_c = -\ln T_c + \frac{2 g i}{\chi}\tan^{-1}\left(-i\frac{\grad T_c}{\chi}\right)
+\ln\rho_c = -\ln T_c + \frac{2 g i}{\xi}\tan^{-1}\left(-i\frac{\grad T_c}{\xi}\right)
 \end{equation}
 Now it's important to know that there's a neat identity: $\tan^{-1}(-i A) = -i\tanh^{-1}(A)$,
 and plugging this in we get
 \begin{equation}
-\ln\rho_c = -\ln T_c + \frac{2 g}{\chi}\tanh^{-1}\left(\frac{\grad T_c}{\chi}\right).
+\ln\rho_c = -\ln T_c + \frac{2 g}{\xi}\tanh^{-1}\left(\frac{\grad T_c}{\xi}\right).
 \end{equation}
 At this point, there's another useful identity: $\tanh^{-1}(A) = (1/2)\ln([1 + A]/[1 - A])$,
 so the density profile is
 \begin{equation}
-\ln\rho_c = -\ln T_c + \frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\right) + \xi.
+\ln\rho_c = -\ln T_c + \frac{g}{\xi}\ln\left(\frac{\xi + \grad T_c}{\xi - \grad T_c}\right) + \Xi.
 \end{equation}
 In general, this profile is valid for any value of $\rho_t$, such that
 \begin{equation}
-\xi = \ln\rho_t + \ln T_t - \frac{g}{\chi}\ln\left(\frac{\chi - 1}{\chi + 1}\right),
+\Xi = \ln\rho_t + \ln T_t - \frac{g}{\xi}\ln\left(\frac{\xi - 1}{\xi + 1}\right),
 \end{equation}
 where $\grad T_c(L_z) = -1$ has already been previously specified.  This means that the general,
 full form of the log density is
 \begin{equation}
+\boxed{
 \ln\left(\frac{\rho_c}{\rho_t}\right) = -\ln\left(\frac{T_c}{T_t}\right) + 
-\frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\cdot\frac{\chi + 1}{\chi - 1}\right)
+\frac{g}{\xi}\ln\left(\frac{\xi + \grad T_c}{\xi - \grad T_c}\cdot\frac{\xi + 1}{\xi - 1}\right) }.
 \end{equation}
 
 \subsubsection{Specifying the depth of the atmosphere}
@@ -186,7 +199,7 @@ atmosphere that carries a superadiabatic flux.
 To get started, I need to consider the value of $\ln\rho_c$ at the bottom of the atmosphere,
 $$
 \ln\rho_c(z=0) = n_\rho = -\ln\left(\frac{T_c(z=0)}{T_t}\right)
-+ \frac{g}{\chi}\ln\left(\frac{(\chi + \grad T_c(z=0))(\chi + 1)}{(\chi - \grad T_c(z=0))(\chi - 1)}\right)
++ \frac{g}{\xi}\ln\left(\frac{(\xi + \grad T_c(z=0))(\xi + 1)}{(\xi - \grad T_c(z=0))(\xi - 1)}\right)
 $$
 And we have a problem here, right?  The stuff on the RHS is a complex function of $\epsilon$ and
 $L_z$, and we're trying to specify $L_z$ using $n_\rho$, not the other way around.
@@ -194,7 +207,7 @@ I'm going to consistently move all of the terms from the RHS to the LHS, then
 non-dimensionalize and assume $T_t = \rho_t = 1$, making the function
 \begin{equation}
 f(L_{z}) = n_\rho + \ln\left(T_t - \frac{H}{2}L_z^2 + L_z\right) - 
-\frac{g}{\chi}\ln\left(\frac{\chi^2 - 1 + HL_z(\chi + 1)}{\chi^2 - 1 - HL_z(\chi - 1)}\right).
+\frac{g}{\xi}\ln\left(\frac{\xi^2 - 1 + HL_z(\xi + 1)}{\xi^2 - 1 - HL_z(\xi - 1)}\right).
 \end{equation}
 When this function is zero, $L_z$ appropriately captures the right number of density scale heights.
 
@@ -212,31 +225,108 @@ This way, by adding the RZ, we're actually extending the atmosphere captured dow
 rather than gobbling up part of the CZ with the RZ.  In order to find $L_{z-cz}$, a
 numerical root-finding algorithm is the logical choice.
 
-\subsection{Musings}
+\subsection{Entropy profile}
+Ok, the specific entropy profile is defined according to the standard entropy equation
+\begin{equation}
+\frac{\grad S}{c_P} = \frac{1}{\gamma}\grad\ln P - \grad \ln \rho = \frac{1}{\gamma}\grad\ln T - \frac{\gamma - 1}{\gamma} \grad\ln\rho
+\end{equation}
+This means that, in the conductive state, where $\grad \ln \rho_c = -g/T_c - \grad\ln T_c$,
+$$
+\frac{\grad S_c}{c_P} = \frac{1}{\gamma}\grad\ln T_c - \frac{\gamma-1}{\gamma}\left(-\frac{g}{T_c} - \grad\ln T_c\right)
+= \grad\ln T_c + \frac{\gamma - 1}{\gamma}\frac{g}{T_c}
+$$
+Which means that the entropy gradient here, and the integration of it, is strikingly similar to
+what we had to do to integrate the log density profile.  Actually it's basically exactly the same, but with
+some extra constants in front and also with a negative sign flip.  So we have
+$$
+\frac{S_c}{c_P} = \ln T_c - \frac{\gamma-1}{\gamma}\frac{g}{\xi}\ln\left(\frac{\xi + \grad T_c}{\xi - \grad T_c}\right) + Y
+$$
+At this point we're free to choose any value of $S_c$ that we want for the gauge.  And really, it's arbitrary.  So I'm
+going to set the entropy at the top of the atmosphere to be zero to just get an analytical nice expression, and I find
+$$
+Y = \frac{\gamma - 1}{\gamma} \frac{g}{\xi} \ln \left(\frac{\xi - 1}{\xi + 1}\right) - \ln T_t,
+$$
+which means the entropy profile is
+\begin{equation}
+\boxed{
+\frac{S_c}{c_P} = \ln\left(\frac{T_c}{T_t}\right) 
+- \frac{\gamma-1}{\gamma}\frac{g}{\xi}\ln\left(\frac{(\xi + \grad T_c)(\xi + 1)}{(\xi - \grad T_c)(\xi - 1)}\right)}.
+\end{equation}
+And, since we have non-dimensionalized this system such that $S = 0$ at the top of the atmosphere,
+then the initial CONVECTIVE ZONE entropy jump across the conductive atmosphere is, assuming
+$T_t = 1$,
+\begin{equation}
+\frac{\Delta S_c}{c_P} = \ln\left(1 + d_{\text{conv}} - \frac{H}{2} d_{\text{conv}}^2\right)
++ \frac{\grad T_{ad}}{\xi}\ln\left(\frac{(1 + \grad T_{ad}/\xi) (1 + \xi)}{(1 - \grad T_{ad}/\xi)(\xi - 1)}\right)
+\end{equation}
+which is still frankly pretty horrifying.  I think at this point I need to remember that
+$$
+\xi = \sqrt{1 + 2H} \approx 1 + H,
+$$
+where the last term is a linear Taylor expansion around $2H = 0$.  So this is a good approximation
+for small $H$, which is honestly generally a good approximation ($H = \epsilon / (d_{\text{conv}}c_P)$).
+So we have actually (before I went and complicated things in the log),
+$$
+\frac{\Delta S_c}{c_P} = \ln\left ( 1 + d_{\text{conv}} - \frac{H}{2}d_{\text{conv}^2}\right)
++ \frac{\grad T_{ad}}{1 + H}\ln\left(\frac{(1 + H + \grad T_{ad})(2 + H)}{(1 + H - \grad T_{ad})H}\right)
+$$
+and $\grad T_{ad} = -(1 - \epsilon / c_P) = -(1 - H d_{\text{conv}})$, so
+$$
+\frac{\Delta S_c}{c_P} = \ln\left ( 1 + d_{\text{conv}} - \frac{H}{2}d_{\text{conv}^2}\right)
++ \frac{-(1 - Hd_{\text{conv}})}{1 + H}\ln\left(\frac{(1 + d_{\text{conv}})(2 + H)}{(2 + H[1 - d_{\text{conv}}])}\right)
+$$
+OK, now we take advantage of the assumption we already made, $H \ll 1$, so we get
+$$
+\frac{\Delta S_c}{c_P} = \ln\left ( 1 + d_{\text{conv}} - \frac{H}{2}d_{\text{conv}^2}\right)
+- (1 - Hd_{\text{conv}})\ln\left(\frac{(1 + d_{\text{conv}})2}{(2 - Hd_{\text{conv}})}\right)
+$$
+and since $\ln(A/B) = \ln(A) - \ln(B)$,
+$$
+\frac{\Delta S_c}{c_P} = \ln\left ( 1 + d_{\text{conv}} - \frac{H}{2}d_{\text{conv}^2}\right)
+- (1 - Hd_{\text{conv}})\left[\ln(1 + d_{\text{conv}}) - \ln(1 - H d_{\text{conv}}/2)\right]
+$$
+and now we can start to group terms a bit differently,
+$$
+\frac{\Delta S_c}{c_P} = \ln \left(\frac{1 + d_{\text{conv}} - H d_{\text{conv}}^2 / 2}{1 + d_{\text{conv}}}\right)
++ H d_{\text{conv}}\ln(1 + d_{\text{conv}}) + (1 - H d_{\text{conv}})\ln(1 - H d_{\text{conv}}/2)
+$$
+Yikes. At this point, we have to make one more assumption, which is a little less \emph{always}
+true, but it still fits into the assumption for the linearized EOS.  That assumption is that
+$d_{\text{conv}}H \ll 1$, such that we can use the $\ln( 1 + x ) \approx x$ for small $x$ assumption.
+Then, we get
+$$
+\frac{\Delta S}{c_P} \approx -\frac{H d_{\text{conv}}^2}{2(1 + d_{\text{conv}})} + H d_{\text{conv}}^2
++ (1 - H d_{\text{conv}})\left(-\frac{H d_{\text{conv}}}{2}\right)
+$$
+or,
+$$
+\frac{\Delta S}{c_P} \approx -\frac{H d_{\text{conv}}^2}{2(1 + d_{\text{conv}})} + H d_{\text{conv}}^2
+ - \frac{1}{2}H d_{\text{conv}} + \frac{H^2 d_{\text{conv}}^2}{2}
+$$
+or,
+$$
+\frac{\Delta S}{c_P} \approx \frac{-H d_{\text{conv}}^2 - H d_{\text{conv}} + (H + H^2)d_{\text{conv}}^2 + (2H + H^2)d_{\text{conv}^3}}{2(1 + d_{\text{conv}})}
+= H d_{\text{conv}}\frac{-1  + H d_{\text{conv}} + (2 + H)d_{\text{conv}}^2}{2(1 + d_{\text{conv}})}
+\sim H d_{\text{conv}}^2.
+$$
+And, for the record, that's about the order of magnitude I was anticipating it to be, and this is about the
+same order of magnitude as we expect the perturbations in $T$ and $\rho$ to be.  Sweet!
 
-There are still three parameters in these systems that need to be figured out:
+\subsection{Thermal Equilibrium}
+The next thing to ask is: is our conductive profile in thermal equilibrium?  If we have an energy equation of the
+form:
+\begin{equation}
+-\kappa \grad^2 T_c = \kappa H,
+\end{equation}
+which is to say, great!  We have $\grad^2 T_c = -H$ in our setup.  To keep our atmosphere simple
+to understand later down the line, we need to note that:
 \begin{enumerate}
-\item thermal diffusivity
-\item viscous diffusvitiy
+\item $\kappa$ should be constant with the depth of the atmosphere, which means that
+$\chi = \kappa/\rho$ should be set based on our new initial conditions, which are not
+the same as what we had in a polytrope, but it is similar.
+\item $\kappa$ should be constant in time for easy analyses, which means that $\chi$ is free
+to evolve as the density profile changes.
 \end{enumerate}
-One of these parameter is free,
-\begin{equation}
-\text{Pr} = \frac{\nu}{\chi}.
-\end{equation}
-We're not going to mess with that.
 
-There will be some type of Rayleigh number in these systems,
-\begin{equation}
-\text{Ra} = \frac{\text{stuff that comes from the atmosphere}}{\nu \chi},
-\end{equation}
-but I need to think a little more and spend some time with the equations to
-figure out what this is.
-
-And then as for the stratification....well, I need to figure out what $n_{\rho}$ I'm specifying.
-The $n_\rho$ of the corresponding adiabatic polytrope?  
-
-\section{Results \& Discussion}
-\label{sec:results}
-
-\bibliography{./biblio.bib}
+\bibliography{../biblio.bib}
 \end{document}
