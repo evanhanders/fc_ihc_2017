@@ -351,7 +351,7 @@ class ConstHeating(Atmosphere):
         self.z_cross = self.f * self.Lz
         self.d_conv  = self.Lz - self.z_cross
         self.H = self.epsilon / (self.Lz * (1 - self.f) * self.Cp)
-        self.Lx = self.Ly = self.d_conv*aspect_ratio
+        self.Lx = self.Ly = self.Lz*aspect_ratio
             
         super(ConstHeating, self).__init__(nx=nx, ny=ny, nz=nz, Lx=self.Lx, Ly=self.Ly, Lz=self.Lz, **kwargs)
         logger.info("   Lx = {:g}, Lz = {:g}".format(self.Lx, self.Lz))
