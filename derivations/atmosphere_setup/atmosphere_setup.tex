@@ -1,0 +1,242 @@
+%\documentclass[iop]{emulateapj}
+\documentclass[aps, pre, onecolumn, nofootinbib, notitlepage, groupedaddress, amsfonts, amssymb, amsmath, longbibliography]{revtex4-1}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+\usepackage{bm}
+\usepackage{natbib}
+\usepackage{longtable}
+\LTcapwidth=0.87\textwidth
+
+\newcommand{\Div}[1]{\ensuremath{\nabla\cdot\left( #1\right)}}
+\newcommand{\angles}[1]{\ensuremath{\left\langle #1 \right\rangle}}
+\newcommand{\grad}{\ensuremath{\nabla}}
+\newcommand{\RB}{Rayleigh-B\'{e}nard }
+\newcommand{\stressT}{\ensuremath{\bm{\bar{\bar{\Pi}}}}}
+\newcommand{\lilstressT}{\ensuremath{\bm{\bar{\bar{\sigma}}}}}
+\newcommand{\nrho}{\ensuremath{n_{\rho}}}
+\newcommand{\approptoinn}[2]{\mathrel{\vcenter{
+	\offinterlineskip\halign{\hfil$##$\cr
+	#1\propto\cr\noalign{\kern2pt}#1\sim\cr\noalign{\kern-2pt}}}}}
+
+\newcommand{\appropto}{\mathpalette\approptoinn\relax}
+
+\newcommand\mnras{{MNRAS}}%
+
+\begin{document}
+\author{Evan H. Anders}
+\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
+\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
+\author{Benjamin P. Brown}
+\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
+\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
+\title{Internally heated, stratified, compressible convection}
+
+\begin{abstract}
+An abstract will go here eventually
+\end{abstract}
+\maketitle
+
+
+\section{Introduction}
+\label{sec:intro}
+\begin{enumerate}
+\item Importance of internal heating in natural convective systems
+\item Shape of internal heating in something like Sun
+\item Studies in Rayleigh-Benard
+\item Goals of this paper:
+\begin{enumerate}
+\item Show how to set up internally heated polytropes, with stable layers (or without)
+\item Show how the resultant stratification depends on combo of lower flux + internal heating profile choices
+\item Show how stable layer affects surface power spectrum
+\end{enumerate}
+\end{enumerate}
+
+\section{Experiment} 
+\label{sec:experiment}
+
+\subsection{General system info and temperature profile}
+We choose a parameter, $\epsilon$, which sets the initial scale of gravity,
+\begin{equation}
+g \equiv m_{ad} + 1 - \epsilon,
+\end{equation}
+where $m_{ad} \equiv (\gamma - 1)^{-1}$, and $\gamma = c_P / c_V = 5/3$.  The atmosphere
+has a constant internal heating term, such that the energy equation looks like
+\begin{equation}
+\frac{\partial}{\partial t}\left(\left[\rho\frac{|\bm{u}|^2}{2} + c_v T + \phi\right]\right)
++ \grad\cdot\left(\bm{F}_{\text{conv}} + \bm{F}_{\text{cond}}\right) = \kappa H,
+\end{equation}
+where $H$ is an internal heating term.  In the initial, static, conductive state, the
+conductive flux must balance the internal heating term,
+\begin{equation}
+\grad\cdot\left(-\kappa\grad T_{c}\right) = \kappa H,
+\end{equation}
+A useful form of the initial temperature gradient in such a system is
+\begin{equation}
+\grad T_{c} = - 1 + H (L_z - z).
+\end{equation}
+This initial conductive solution is \emph{not} the adiabatic solution to this atmosphere,
+\begin{equation}
+\grad T_{ad} = -\frac{g}{c_P} = -1 + \frac{\epsilon}{c_P}.
+\end{equation}
+If we integrate the conductive solution, our initial temperature profile is
+$$
+T_c(z) = (H L_z - 1) z - \frac{H}{2}z^2 + C
+$$
+and if we want $T_c(L_z) = T_t$,
+\begin{equation}
+T_c(z) = -\frac{H}{2}z^2 - (1 - H L_z) z + \left(T_t - \frac{H}{2}L_z^2 + L_z\right).
+\end{equation}
+So our initial temperature gradient is now quadratic.
+
+The initial \emph{superadiabatic temperature gradient} is an important quantity, as it
+determines whether or not the atmosphere is stable to convection.  This gradient
+in these systems is
+\begin{equation}
+\grad T_{c} - \grad T_{ad} = H(L_z - z) - \frac{\epsilon}{c_P}.
+\end{equation}
+When this quantity is zero, the atmosphere is carrying the maximum amount of flux
+that conductivity can carry.  When this value is less than zero, the atmosphere
+requires convection to carry the flux.  Solving for a generalized zero-point, we
+find that
+\begin{equation}
+z_{\text{cross}} \equiv L_z - \frac{\epsilon}{H c_P}.
+\end{equation}
+In order for the atmosphere to have any region that is unstable to convection,
+we require that $0 < \epsilon / ( H c_P ) < L_z$.  In the case that 
+$\epsilon / ( H c_P ) < L_z$, the whole atmosphere is unstable to convection.
+Further, the anticipated length scale of the convecting region of the atmosphere
+is the full atmosphere above $z_{\text{cross}}$, or
+\begin{equation}
+d_{\text{conv}} = L_z - z_{\text{cross}} = \frac{\epsilon}{H c_P}
+\end{equation}
+
+I think there are two natural control parameters of this system:
+\begin{enumerate}
+\item $f \equiv z_{\text{cross}} / L_z$, the fraction of the atmosphere that is stable
+($f = 0$ means the full atmosphere convects, $f = 0.5$ means that the upper half convects, etc).
+This \emph{should} be the parameter that determines the depth of the stable layer.
+\item $\epsilon$, the deviation of the initial temperature gradient (at the top of the atmosphere)
+from the adiabatic temperature gradient. This \emph{should} be the parameter that determines
+the depth of the stable layer.
+\end{enumerate}
+By specifying these two parameters, we retrieve the magnitude of the internal heating,
+$ f = 1 - \epsilon / (H c_P L_z)$
+\begin{equation}
+H = \frac{\epsilon}{L_z c_P (1 - f)}.
+\end{equation}
+
+\subsection{Initial density stratification}
+
+The initial density profile is set by hydrostatic equilibrium,
+\begin{equation}
+\grad\ln\rho_c = -\frac{g + \grad T_c}{T_c} = -\grad\ln T_c- \frac{g}{T_c}.
+\end{equation}
+If we integrate over this function, the first term is super easy, and we end up having
+\begin{equation}
+\ln\rho_c = - \ln T_c - \int\frac{g}{T_c}dz + \xi,
+\end{equation}
+where $\xi$ is a constant.  The next integral is harder.  In general, this integral has the form
+\begin{equation}
+\int \frac{1}{Az^2 + Bz + C}dz = \frac{2}{\sqrt{4 AC - B^2}} \tan^{-1}\left(\frac{2 Az + B}{\sqrt{4 AC - B}}\right).
+\end{equation}
+For our specific implementation, we get our constants from the temperature profile,
+$$
+A = -H / 2 \qquad B = (HL_z - 1) \qquad C = \left(T_t - \frac{H}{2}L_z^2 + L_z\right),
+$$
+and note that $2Az + B = -Hz + (HL_z - 1) = \grad T_c$.  Note also that
+$4AC - B^2 = -2H(T_t - (H/2)L_z^2 + L_z) - (H^2 L_z^2 - 2HL_z + 1) = -2HT_t - 1$,
+so $\sqrt{4AC - B^2} = i\chi$, where $i = \sqrt{-1}$ and $\chi = \sqrt{1 + 2HT_t}$.
+With these definitions in hand, we find that
+\begin{equation}
+\ln\rho_c = -\ln T_c + \frac{2 g i}{\chi}\tan^{-1}\left(-i\frac{\grad T_c}{\chi}\right)
+\end{equation}
+Now it's important to know that there's a neat identity: $\tan^{-1}(-i A) = -i\tanh^{-1}(A)$,
+and plugging this in we get
+\begin{equation}
+\ln\rho_c = -\ln T_c + \frac{2 g}{\chi}\tanh^{-1}\left(\frac{\grad T_c}{\chi}\right).
+\end{equation}
+At this point, there's another useful identity: $\tanh^{-1}(A) = (1/2)\ln([1 + A]/[1 - A])$,
+so the density profile is
+\begin{equation}
+\ln\rho_c = -\ln T_c + \frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\right) + \xi.
+\end{equation}
+In general, this profile is valid for any value of $\rho_t$, such that
+\begin{equation}
+\xi = \ln\rho_t + \ln T_t - \frac{g}{\chi}\ln\left(\frac{\chi - 1}{\chi + 1}\right),
+\end{equation}
+where $\grad T_c(L_z) = -1$ has already been previously specified.  This means that the general,
+full form of the log density is
+\begin{equation}
+\ln\left(\frac{\rho_c}{\rho_t}\right) = -\ln\left(\frac{T_c}{T_t}\right) + 
+\frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\cdot\frac{\chi + 1}{\chi - 1}\right)
+\end{equation}
+
+\subsubsection{Specifying the depth of the atmosphere}
+I still want $n_\rho$ to be the parameter that specifies the depth of the parameter,
+and I specifically want it to specify the number of density scale heights in the part of the
+atmosphere that carries a superadiabatic flux.  
+
+To get started, I need to consider the value of $\ln\rho_c$ at the bottom of the atmosphere,
+$$
+\ln\rho_c(z=0) = n_\rho = -\ln\left(\frac{T_c(z=0)}{T_t}\right)
++ \frac{g}{\chi}\ln\left(\frac{(\chi + \grad T_c(z=0))(\chi + 1)}{(\chi - \grad T_c(z=0))(\chi - 1)}\right)
+$$
+And we have a problem here, right?  The stuff on the RHS is a complex function of $\epsilon$ and
+$L_z$, and we're trying to specify $L_z$ using $n_\rho$, not the other way around.
+I'm going to consistently move all of the terms from the RHS to the LHS, then
+non-dimensionalize and assume $T_t = \rho_t = 1$, making the function
+\begin{equation}
+f(L_{z}) = n_\rho + \ln\left(T_t - \frac{H}{2}L_z^2 + L_z\right) - 
+\frac{g}{\chi}\ln\left(\frac{\chi^2 - 1 + HL_z(\chi + 1)}{\chi^2 - 1 - HL_z(\chi - 1)}\right).
+\end{equation}
+When this function is zero, $L_z$ appropriately captures the right number of density scale heights.
+
+Since we have set up all of our non-dimensionalizations at the \emph{top} of the atmosphere, and we
+are building atmospheres which have CZs above RZs, we can actually really simply specify the
+density stratification of the CZ.  The CZ is an atmosphere with $f = 0$ whose $z = 0$ starts
+at $z_{cross}$.  If we set $n_\rho = n_{\rho, cz}$ and set $f = 0$, and then find the appropriate
+$L_z$ from $f(L_z)$, that will give us $L_{z-cz}$.  And since that is a \emph{depth} from
+the top of the atmosphere, we can use that depth to determine how big the rest of the
+atmosphere should be for our ``true'' value of $f$. That is,
+\begin{equation}
+L_z = \frac{L_{z-cz}}{1 - f}.
+\end{equation}
+This way, by adding the RZ, we're actually extending the atmosphere captured down into the RZ,
+rather than gobbling up part of the CZ with the RZ.  In order to find $L_{z-cz}$, a
+numerical root-finding algorithm is the logical choice.
+
+\subsection{Musings}
+
+There are still three parameters in these systems that need to be figured out:
+\begin{enumerate}
+\item thermal diffusivity
+\item viscous diffusvitiy
+\end{enumerate}
+One of these parameter is free,
+\begin{equation}
+\text{Pr} = \frac{\nu}{\chi}.
+\end{equation}
+We're not going to mess with that.
+
+There will be some type of Rayleigh number in these systems,
+\begin{equation}
+\text{Ra} = \frac{\text{stuff that comes from the atmosphere}}{\nu \chi},
+\end{equation}
+but I need to think a little more and spend some time with the equations to
+figure out what this is.
+
+And then as for the stratification....well, I need to figure out what $n_{\rho}$ I'm specifying.
+The $n_\rho$ of the corresponding adiabatic polytrope?  
+
+\section{Results \& Discussion}
+\label{sec:results}
+
+\bibliography{./biblio.bib}
+\end{document}
