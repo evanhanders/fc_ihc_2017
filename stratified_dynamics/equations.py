@@ -277,7 +277,7 @@ class FC_equations(Equations):
         self.linear_thermal_diff_l    = " Cv_inv*(chi_l*(Lap(T1, T1_z) + T0_z*dz(ln_rho1)))"
         self.linear_thermal_diff_r    = " Cv_inv*(chi_r*(Lap(T1, T1_z) + T0_z*dz(ln_rho1)))"
         self.nonlinear_thermal_diff   = " Cv_inv*chi*(dx(T1)*dx(ln_rho1) + dy(T1)*dy(ln_rho1) + T1_z*dz(ln_rho1))"
-        self.source =                   " (Cv_inv*(chi*(T0_zz) + IH/rho_full))"
+        self.source =                   " (Cv_inv*chi*(T0_zz + IH))"
         if not self.constant_kappa:
             self.linear_thermal_diff_l += '+ Cv_inv*(chi_l*del_ln_rho0 + del_chi_l)*T1_z'
             self.linear_thermal_diff_r += '+ Cv_inv*(chi_r*del_ln_rho0 + del_chi_r)*T1_z'
@@ -671,7 +671,7 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
         
         self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT0*-1*ln_rho1 + κT1)"
         self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT0*(exp(-ln_rho1)+ln_rho1) + κT1*(exp(-ln_rho1)-1))"
-        self.problem.substitutions['source_terms'] = " (κ/rho_full*Cv_inv*(T0_zz + del_ln_κ*T0_z) + Cv_inv*IH/rho_full)"        
+        self.problem.substitutions['source_terms'] = " (κ*Cv_inv*IH/rho_full)"        
         self.problem.substitutions['R_visc_heat']  = " μ/rho_full*Cv_inv*(dx(u)*σxx + dy(v)*σyy + w_z*σzz + σxy**2 + σxz**2 + σyz**2)"
 
     def _set_diffusivities(self, *args, **kwargs):
