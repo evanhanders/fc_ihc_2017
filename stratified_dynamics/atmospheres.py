@@ -402,7 +402,8 @@ class ConstHeating(Atmosphere):
 
         self.T0_zz['g'] = -self.H
         self.T0_z['g'] = - 1 + self.H * (self.Lz - self.z)
-        self.T0['g'] = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+        self.T0_z.antidifferentiate('z', ('right', 1), out=self.T0)
+#        self.T0['g'] = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
 
         self.T0_z.set_scales(1, keep_data=True)
         self.T0.set_scales(1, keep_data=True)
@@ -413,9 +414,9 @@ class ConstHeating(Atmosphere):
 
         self.T0_z.set_scales(1, keep_data=True)
         self.T0.set_scales(1, keep_data=True)
-        self.ln_rho0.set_scales(1, keep_data=True)
+        self.del_ln_rho0.set_scales(1, keep_data=True)
         #Note: this is grad S, not grad S / cP
-        self.del_s0['g'] = (1/(self.gamma-1)) * self.T0_z['g']/self.T0['g'] - self.ln_rho0['g']
+        self.del_s0['g'] = (1/(self.gamma-1)) * self.T0_z['g']/self.T0['g'] - self.del_ln_rho0['g']
         s0 = self._new_ncc()
         self.del_s0.antidifferentiate('z', ('right', 0), out=s0)
         self.delta_s = s0.interpolate(z=self.Lz)['g'][0][0] - s0.interpolate(z=self.z_cross)['g'][0][0]
@@ -477,7 +478,8 @@ class ConstHeating(Atmosphere):
         # min of global quantity
         atmosphere.min_BV_time = self.domain.dist.comm_cart.allreduce(np.min(np.sqrt(np.abs(self.g*self.del_s0['g']/self.Cp))), op=MPI.MIN)
         atmosphere.freefall_time = np.sqrt(self.d_conv/self.g)
-        atmosphere.buoyancy_time = np.sqrt(np.abs(self.d_conv / (self.g * self.epsilon)))
+        print(self.delta_s)
+        atmosphere.buoyancy_time = np.sqrt(np.abs(self.d_conv / (self.g * self.delta_s / self.Cp)))
         
         logger.info("atmospheric timescales:")
         logger.info("   min_BV_time = {:g}, freefall_time = {:g}, buoyancy_time = {:g}".format(atmosphere.min_BV_time,
@@ -490,7 +492,8 @@ class ConstHeating(Atmosphere):
         self.Rayleigh, self.Prandtl = Rayleigh, Prandtl
 
         # set nu and chi at top based on Rayleigh number
-        self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**4 * self.epsilon * self.g) / Rayleigh)
+        self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**3 * np.abs(self.delta_s/self.Cp) * self.g) / Rayleigh)
+        #self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**4 * self.epsilon * self.g) / Rayleigh)
         self.chi_top = chi_top = nu_top/Prandtl
 
         if self.constant_diffusivities:
