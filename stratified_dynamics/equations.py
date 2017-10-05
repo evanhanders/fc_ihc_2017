@@ -290,6 +290,11 @@ class FC_equations(Equations):
         self.problem.substitutions['source_terms'] = self.source
 
         self.problem.substitutions['R_visc_heat'] = " Cv_inv*nu*(dx(u)*σxx + dy(v)*σyy + w_z*σzz + σxy**2 + σxz**2 + σyz**2)"
+
+        self.problem.substitutions['kappa_flux_mean'] = '-rho0*chi*dz(T0)'
+        self.problem.substitutions['kappa_flux_fluc'] = '(-rho_full*chi*dz(T1) - rho_fluc*chi*dz(T0))'
+
+
         
     def _set_subs(self):
         # does both analysis subs and equation subs currently.
@@ -325,8 +330,6 @@ class FC_equations(Equations):
         #self.problem.substitutions['Pe_microscale'] = 'vel_rms*lambda_microscale/chi'
         
         self.problem.substitutions['h_flux_z'] = 'w*(h)'
-        self.problem.substitutions['kappa_flux_mean'] = '-rho0*chi*dz(T0)'
-        self.problem.substitutions['kappa_flux_fluc'] = '(-rho_full*chi*dz(T1) - rho_fluc*chi*dz(T0))'
         self.problem.substitutions['kappa_flux_z'] = '(kappa_flux_mean + kappa_flux_fluc)'
         self.problem.substitutions['KE_flux_z'] = 'w*(KE)'
         self.problem.substitutions['PE_flux_z'] = 'w*(PE)'
@@ -673,6 +676,9 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
         self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT0*(exp(-ln_rho1)+ln_rho1) + κT1*(exp(-ln_rho1)-1))"
         self.problem.substitutions['source_terms'] = " (κ*Cv_inv*IH/rho_full)"        
         self.problem.substitutions['R_visc_heat']  = " μ/rho_full*Cv_inv*(dx(u)*σxx + dy(v)*σyy + w_z*σzz + σxy**2 + σxz**2 + σyz**2)"
+
+        self.problem.substitutions['kappa_flux_mean'] = '-κ*dz(T0)'
+        self.problem.substitutions['kappa_flux_fluc'] = '-κ*dz(T1)'
 
     def _set_diffusivities(self, *args, **kwargs):
         super(FC_equations_2d_kappa_mu, self)._set_diffusivities(*args, **kwargs)
