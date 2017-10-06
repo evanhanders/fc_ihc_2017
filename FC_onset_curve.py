@@ -1,6 +1,6 @@
 """
 Dedalus script for finding the onset of compressible convection in a 
-polytropic or multitropic atmosphere
+constantly internally heated atmosphere
 
 Usage:
     FC_onset_curve.py [options] 
@@ -21,25 +21,17 @@ Options:
     --nz=<nz>                           z (chebyshev) resolution [default: 48]
 
     --bcs=<bcs>                         Boundary conditions ('fixed', 'mixed', 
-                                            or 'flux') [default: fixed]
+                                            or 'flux') [default: mixed]
     --Prandtl=<Pr>                      Prandtl number [default: 1]
     --Taylor=<Ta>                       If not None, solve for rotating convection
 
-    #Polytrope options
-    --n_rho=<n_rho>                     nrho of polytrope [default: 3]
-    --epsilon=<epsilon>                 epsilon of polytrope  [default: 0.5]
-    --gamma=<gamma>                     Gamma of polytrope [default: 5/3]
+    #Const Heating options
+    --n_rho=<n_rho>                     nrho of convecting region [default: 3]
+    --epsilon=<epsilon>                 epsilon of const heating atmo  [default: 0.5]
+    --f=<f>                             The f-parameter of the const heating atmo [default: 0.5]
+    --gamma=<gamma>                     Gamma of atmosphere [default: 5/3]
     --constant_chi                      If true, use const chi
     --constant_nu                       If true, use const nu
-
-    #Multitrope options
-    --Multitrope                        If flagged, do onset for multitrope instead
-    --n_rho_cz=<n_rho>                  nrho of convection zone [default: 3]
-    --n_rho_rz=<n_rho>                  nrho of radiative zone [default: 3]
-    --stiffness=<stiff>                 stiffness of multitrope  [default: 1e4]
-    --width=<width>                     Width of tanh
-    --non_constant_Prandtl              If flagged, use non-constant Pr.
-
 
 
     --3D                                If flagged, use 3D eqns and search kx & ky
@@ -59,16 +51,8 @@ import numpy as np
 
 args = docopt(__doc__)
 
-if args['--Multitrope']:
-    logger.info("Solving on multitropes")
-    polytrope, multitrope = False, True
-    atmo_type = 1
-    file_name = 'FC_multi_onsets'
-else:
-    logger.info("Atmosphere type not specified, using polytrope")
-    polytrope, multitrope = True, False
-    atmo_type = 0
-    file_name = 'FC_poly_onsets'
+atmo_type = 0
+file_name = 'FC_ConstHeat_onsets'
 
 
 
@@ -96,55 +80,33 @@ if np.abs(ky_stop/ky_start) > 10:
 
 ##########################################
 #Set up defaults for the atmosphere
-if polytrope:
-    const_kap = True
-    if args['--constant_chi']:
-        const_kap = False
-    const_mu = True
-    if args['--constant_nu']:
-        const_mu = False
+const_kap = True
+if args['--constant_chi']:
+    const_kap = False
+const_mu = True
+if args['--constant_nu']:
+    const_mu = False
 
-    nz = int(args['--nz'])
-    n_rho = float(args['--n_rho_cz'])
-    epsilon = float(args['--epsilon'])
-    file_name += '_eps{}'.format(args['--epsilon'])
-    file_name += '_nrho{}'.format(args['--n_rho_cz'])
-    try:
-        gamma = float(args['--gamma'])
-    except:
-        from fractions import Fraction
-        gamma = float(Fraction(args['--gamma']))
+nz = int(args['--nz'])
+n_rho = float(args['--n_rho_cz'])
+epsilon = float(args['--epsilon'])
+f = float(args['--f'])
+file_name += '_eps{}'.format(args['--epsilon'])
+file_name += '_nrho{}'.format(args['--n_rho_cz'])
+try:
+    gamma = float(args['--gamma'])
+except:
+    from fractions import Fraction
+    gamma = float(Fraction(args['--gamma']))
 
 
-    atmo_kwargs = {'n_rho_cz':       n_rho,
-                   'epsilon':        epsilon,
-                   'constant_kappa': const_kap,
-                   'constant_mu':    const_mu,
-                   'nz':             nz,
-                   'gamma':          gamma}
-if multitrope:
-    const_pr = True
-    if args['--non_constant_Prandtl']:
-        const_pr = False
-
-    nz = args['--nz'].split(',')
-    nz = [int(n) for n in nz]
-    n_rho_cz = float(args['--n_rho_cz'])
-    n_rho_rz = float(args['--n_rho_rz'])
-    file_name += '_nrhos{}-{}'.format(n_rho_cz, n_rho_rz)
-    stiffness = float(args['--stiffness'])
-    file_name += '_stiff{}'.format(stiffness)
-    width = args['--width']
-    if width != None:
-        width = float(width)
-        file_name += '_w{:s}'.format(args['--width'])
-    atmo_kwargs = {  'n_rho_cz':             n_rho_cz,
-                    'n_rho_rz':             n_rho_rz,
-                    'stiffness':            stiffness,
-                    'constant_Prandtl':     const_pr,
-                    'nz':                   nz,
-                    'width':                width}
-
+atmo_kwargs = {'n_rho_cz':       n_rho,
+               'epsilon':        epsilon,
+               'constant_kappa': const_kap,
+               'constant_mu':    const_mu,
+               'nz':             nz,
+               'f':              f,
+               'gamma':          gamma}
 
 ##############################################
 #Setup default arguments for equation building

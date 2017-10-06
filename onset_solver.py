@@ -18,7 +18,7 @@ from scipy import interpolate
 
 
 from tools.eigentools.eigentools import Eigenproblem, CriticalFinder
-from stratified_dynamics import polytropes, multitropes
+from stratified_dynamics import const_heat
 
 
 CW = MPI.COMM_WORLD
@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore")
 class OnsetSolver:
     """
     This class finds the onset of convection in a specified atmosphere
-    (currently multitropes and polytropes) using a specified equation
+    (currently constant internal heating atmosphere) using a specified equation
     set (currently FC Navier Stokes is implemented).
 
     NOTE: This class currently depends on Evan Anders' branch of eigentools,
@@ -48,8 +48,7 @@ class OnsetSolver:
                              (0) FC Hydro
             atmosphere  - An integer, specifying the type of atmosphere.
                             Options:
-                             (0) Polytrope
-                             (1) Multitrope
+                             (0) Constant Internal Heating
             ra_steps    - A tuple containing four elements:
                             1. Min Ra to solve eigenproblem at
                             2. Max Ra to solve eigenproblem at
@@ -168,18 +167,14 @@ class OnsetSolver:
         if self._eqn_set == 0:
             if self._atmosphere == 0:
                 if self.threeD:
-                    self.atmosphere = polytropes.FC_polytrope_3d(
+                    self.atmosphere = const_heat.FC_ConstHeating_3d(
                                        dimensions=1, comm=MPI.COMM_SELF, 
                                        grid_dtype=np.complex128, **self.atmo_kwargs)
                     self._eqn_kwargs['ky'] = ky*2*np.pi/self.atmosphere.Lz
                 else:
-                    self.atmosphere = polytropes.FC_polytrope_2d(
+                    self.atmosphere = const_heat.FC_ConstHeating_2d_kappa_mu(
                                        dimensions=1, comm=MPI.COMM_SELF, 
                                        grid_dtype=np.complex128, **self.atmo_kwargs)
-            elif self._atmosphere == 1:
-                self.atmosphere = multitropes.FC_multitrope(
-                                   dimensions=1, comm=MPI.COMM_SELF, 
-                                   grid_dtype=np.complex128, **self.atmo_kwargs)
         kx_real = kx*2*np.pi/self.atmosphere.Lz
 
         #Set the eigenvalue problem using the atmosphere
