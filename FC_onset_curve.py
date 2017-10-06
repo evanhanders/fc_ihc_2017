@@ -28,7 +28,7 @@ Options:
     #Const Heating options
     --n_rho_cz=<n_rho_cz>                     nrho of convecting region [default: 3]
     --epsilon=<epsilon>                 epsilon of const heating atmo  [default: 0.5]
-    --f=<f>                             The f-parameter of the const heating atmo [default: 0.5]
+    --r=<r>                             The r-parameter of the const heating atmo [default: 1]
     --gamma=<gamma>                     Gamma of atmosphere [default: 5/3]
     --constant_chi                      If true, use const chi
     --constant_nu                       If true, use const nu
@@ -90,7 +90,7 @@ if args['--constant_nu']:
 nz = int(args['--nz'])
 n_rho = float(args['--n_rho_cz'])
 epsilon = float(args['--epsilon'])
-f = float(args['--f'])
+r = float(args['--r'])
 file_name += '_eps{}'.format(args['--epsilon'])
 file_name += '_nrho{}'.format(args['--n_rho_cz'])
 try:
@@ -105,7 +105,7 @@ atmo_kwargs = {'n_rho_cz':       n_rho,
                'constant_kappa': const_kap,
                'constant_mu':    const_mu,
                'nz':             nz,
-               'f':              f,
+               'r':              r,
                'gamma':          gamma}
 
 ##############################################
