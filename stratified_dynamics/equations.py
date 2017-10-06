@@ -656,10 +656,24 @@ class FC_equations_2d(FC_equations):
 
 class FC_equations_2d_kappa_mu(FC_equations_2d):
 
-    def _set_diffusion_subs(self):
+    def _set_diffusion_subs(self, bg_TE=True):
+        """
+        Set substitutions for diffusion operators for a 2D system, where
+        kappa and mu are NOT functions of time
+
+        Note: thermal equilibrium implies that
+            - κ∇^2 T0 - ∇κ·∇T0 = κ (IH),
+        such that the background atmosphere works to cancel out the internal heating profile.
+
+        Inputs:
+        -------
+            bg_TE       - If True, assume that the background profile is in thermal equilibrium
+
+
+        """
         # define nu and chi for outputs
-        self.problem.substitutions['nu']  = 'μ/rho0*exp(-ln_rho1)'
-        self.problem.substitutions['chi'] = 'κ/rho0*exp(-ln_rho1)'
+        self.problem.substitutions['nu']  = 'μ/rho_full' #rho0*exp(-ln_rho1)'
+        self.problem.substitutions['chi'] = 'κ/rho_full' #rho0*exp(-ln_rho1)'
         
         self.problem.substitutions['L_visc_u'] = " μ/rho0*(Lap(u, u_z) + 1/3*Div(dx(u), dx(v), dx(w_z)) + del_ln_μ*σxz)"
         self.problem.substitutions['L_visc_v'] = " μ/rho0*(Lap(v, v_z) + 1/3*Div(dy(u), dy(v), dy(w_z)) + del_ln_μ*σyz)"
@@ -671,10 +685,19 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
 
         self.problem.substitutions['κT0'] = "(del_ln_κ*T0_z + T0_zz)"
         self.problem.substitutions['κT1'] = "(del_ln_κ*T1_z + Lap(T1, T1_z))"
-        
-        self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT0*-1*ln_rho1 + κT1)"
-        self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT0*(exp(-ln_rho1)+ln_rho1) + κT1*(exp(-ln_rho1)-1))"
-        self.problem.substitutions['source_terms'] = " (κ*Cv_inv*IH/rho_full)"        
+       
+        if bg_TE:
+            if 'EVP' in self.problem_type:
+                self.problem.substitutions['L_thermal']    = " 0 "
+                self.problem.substitutions['R_thermal']    = " κ*Cv_inv*κT1/rho_full"
+            else:
+                self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT1)"
+                self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT1*(exp(-ln_rho1)-1))"
+            self.problem.substitutions['source_terms'] = " 0"        
+        else:
+            self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT0*-1*ln_rho1 + κT1)"
+            self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT0*(exp(-ln_rho1)+ln_rho1) + κT1*(exp(-ln_rho1)-1))"
+            self.problem.substitutions['source_terms'] = " (κ*Cv_inv*IH/rho_full)"        
         self.problem.substitutions['R_visc_heat']  = " μ/rho_full*Cv_inv*(dx(u)*σxx + dy(v)*σyy + w_z*σzz + σxy**2 + σxz**2 + σyz**2)"
 
         self.problem.substitutions['kappa_flux_mean'] = '-κ*dz(T0)'

@@ -67,6 +67,57 @@ Thus far, I have only non-dimensionalized one of my thermodynamic variables (tem
 and I will need to do another one later, but I won't worry about that for now.
 
 \subsection{Non-dimensionalizing the energy equation}
+
+\subsubsection{New version 10/6}
+OK, so I'm going to approach the energy equation in a similar manner here as we generally approach
+the momentum equation to get a linear form of it.  In order to do so, I will break up
+$T = T_0 + T_1$, and I will assume that \emph{my initial temperature profile is
+in thermal equilibrium, and it is also invariant over time}, such that
+\begin{equation}
+-\kappa\grad^2 T_0 -\grad\kappa\cdot\grad T_0 = \kappa H \qquad \frac{\partial T_0}{\partial t} = 0.
+\end{equation}
+If I assume that $\kappa \neq f(\bm{x})$, such that it is spatially invariant,
+then
+$$
+-\kappa\grad^2 T_0 = \kappa H
+$$
+Why is this important?  Because under these assumptions, and after dividing through
+by $\rho c_V$, the energy equation takes the form
+\begin{equation}
+\frac{\partial T_1}{\partial t} + \bm{u}\cdot\grad(T_0 + T_1) + (\gamma - 1) (T_0 + T_1)
+\Div{\bm{u}} - \frac{\kappa}{\rho c_V}\grad^2 T_1 = -\frac{1}{\rho c_V}(\stressT\cdot\grad)\cdot\bm{u}
+\label{eqn:energy_no_therm_equilib}
+\end{equation}
+There are a couple of important things of note, here:
+\begin{enumerate}
+\item The internal heating term is now gone from the equation.  Presumably this will
+make the non-dimensionalization more clear, here.
+\item Each term is now linear (or non-linear) with respect to fluctuations in the
+system.  So it's more clear that when we non-dimensionalize $T$, we're taking $\bar{T}$
+out of $T_1$, not $T = T_0 + T_1$, which will make $\bar{T}$ a vastly different
+scale based on the choice of $\epsilon$.
+\end{enumerate}
+Note also that the above equation, Eqn. \ref{eqn:energy_no_therm_equilib}, is also
+the \emph{complete} equation for constant $\kappa$. To make our lives a bit nicer,
+let's simplify a little.  Since
+$$
+\kappa = \chi\rho, \qquad \text{and} \qquad \stressT = -\mu\lilstressT,\,\,\mu = \nu\rho
+$$
+we can write
+\begin{equation}
+\boxed{
+\frac{\partial T_1}{\partial t} + \bm{u}\cdot\grad(T_0 + T_1) + (\gamma - 1) (T_0 + T_1)
+\Div{\bm{u}} - \frac{\chi}{c_V}\grad^2 T_1 = \frac{\nu}{c_V}(\lilstressT\cdot\grad)\cdot\bm{u}}.
+\label{eqn:energy_no_therm_equilib_reduced}
+\end{equation}
+As Ben just pointed out to me, this is now a system that we can do an onset solve on!
+That's a huge insight.  This system responds to perturbations around the mean state,
+and it's ONSET SOLVABLE.
+
+This is big.
+
+
+\subsubsection{Brute Force}
 In the spirit of the last section, I will now replace all of my dimension-filled variables
 with dimensionless variables.  I have also replaced the viscous heating term with a term
 that has equivalent units ($\mu \grad^2 \bm{u}^2$), to make the nondimensionalizing clearer.
