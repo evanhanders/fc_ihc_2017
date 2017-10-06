@@ -14,7 +14,7 @@ Options:
     --Prandtl=<Prandtl>                  Prandtl number = nu/kappa [default: 1]
     --n_rho_cz=<n_rho_cz>                Density scale heights across unstable layer [default: 3]
     --epsilon=<epsilon>                  The magnitude of heating wrt background [default: 1e-4]
-    --f=<f>                              Fraction of the domain occupied by RZ [default: 0.5]
+    --r=<r>                              ratio of size of RZ/CZ [default: 1]
     --gamma=<gamma>                      Gamma of ideal gas (cp/cv) [default: 5/3]
     --aspect=<aspect_ratio>              Physical aspect ratio of the atmosphere [default: 4]
 
@@ -66,7 +66,7 @@ import numpy as np
 def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  Taylor=None, theta=0,
                  nz=128, nx=None, ny=None, threeD=False, mesh=None,
-                 n_rho_cz=3, epsilon=1e-4, gamma=5/3, f=0.5,
+                 n_rho_cz=3, epsilon=1e-4, gamma=5/3, r=1,
                  run_time=23.5, run_time_buoyancies=None, run_time_therm=None, run_time_iter=np.inf, 
                  fixed_T=False, fixed_flux=False, mixed_flux_T=False,
                  const_mu=True, const_kappa=True,
@@ -106,11 +106,11 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     if dynamic_diffusivities:
         atmosphere = const_heat.FC_ConstHeating_2d_kappa_mu(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,\
                                     epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
-                                    f=f, fig_dir=data_dir)
+                                    r=r, fig_dir=data_dir)
     else:
         atmosphere = const_heat.FC_ConstHeating_2d(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,\
                                     epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
-                                    f=f, fig_dir=data_dir)
+                                    r=r, fig_dir=data_dir)
     if epsilon < 1e-4:
         ncc_cutoff = 1e-14
     elif epsilon > 1e-1:
@@ -395,7 +395,7 @@ if __name__ == "__main__":
     else:
         Taylor = None
         data_dir += "_nrhocz{}_Ra{}_Pr{}".format(args['--n_rho_cz'], args['--Rayleigh'], args['--Prandtl'])
-    data_dir += "_eps{}_a{}_f{}".format(args['--epsilon'], args['--aspect'], args['--f'])
+    data_dir += "_eps{}_a{}_r{}".format(args['--epsilon'], args['--aspect'], args['--r'])
 
 
     if args['--label'] == None:
@@ -480,7 +480,7 @@ if __name__ == "__main__":
                  n_rho_cz=float(args['--n_rho_cz']),
                  epsilon=float(args['--epsilon']),
                  gamma=float(Fraction(args['--gamma'])),
-                 f=float(args['--f']),
+                 r=float(args['--r']),
                  run_time=float(args['--run_time']),
                  run_time_buoyancies=run_time_buoy,
                  run_time_therm=run_time_therm,

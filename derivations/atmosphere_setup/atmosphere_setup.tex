@@ -192,6 +192,34 @@ full form of the log density is
 \end{equation}
 
 \subsubsection{Specifying the depth of the atmosphere}
+I'm going to define a different way of specifying the whole atmospheric depth.  I still like what
+I have in the section below for finding the depth for finding the depth of the convection zone.
+However, after that point, the choice of $f$ is opaque and hard to understand.  Thus, I'll
+define a new parameter,
+\begin{equation}
+r \equiv \frac{L_{RZ}}{L_{CZ}},
+\end{equation}
+such that as $r \rightarrow 0$, we have an atmosphere which is entirely convective, and
+as $r \rightarrow \infty$, we have an atmosphere which is entirely a radiative zone.
+
+If the depth of the radiative zone is known, this means that the depth of the total
+atmosphere is just
+\begin{equation}
+\boxed{
+L_z = L_{CZ}(1 + r)}.
+\end{equation}
+A few points of comparison:
+\begin{enumerate}
+\item $f = 0$ was the same thing as $r = 0$.
+\item $f = 0.5$ is now $r = 1$.
+\item $f = 0.75$ is now $r = 3$ (RZ is 3x deeper than CZ)
+\item $f = 0.9$  is now $r = 9$.  
+\end{enumerate}
+Basically the important thing to note is that the range $f = 0 \rightarrow 0.5$ basically didn't
+change much, but the range $f = 0.5 \rightarrow 1$ changed things hugely in a hard to understand,
+nonlinear way.  Now, changes of $r$ correspond to understandable changes in the atmosphere.
+
+\subsubsection{Old version of atmospheric depth specification}
 I still want $n_\rho$ to be the parameter that specifies the depth of the parameter,
 and I specifically want it to specify the number of density scale heights in the part of the
 atmosphere that carries a superadiabatic flux.  

@@ -338,19 +338,19 @@ class ConstHeating(Atmosphere):
                  nz=128,
                  aspect_ratio=4,
                  n_rho_cz = 4, #Initially use the number of density scale heights of an adiabatic polytrope
-                 epsilon=1e-4, gamma=5/3, f=0.5,
+                 epsilon=1e-4, gamma=5/3, r=1,
                  constant_kappa=True, constant_mu=True,
                  **kwargs):
         
         self.atmosphere_name = 'Internally Heated Atmosphere -- Constant Heating'
         self.aspect_ratio    = aspect_ratio
         self.n_rho_cz        = n_rho_cz
-        self.f               = f
+        self.r               = r
         self._set_atmosphere_parameters(gamma=gamma, epsilon=epsilon)
         self.Lz = self._calculate_Lz_cz(n_rho_cz, self.m_ad)
-        self.z_cross = self.f * self.Lz
-        self.d_conv  = self.Lz - self.z_cross
-        self.H = self.epsilon / (self.Lz * (1 - self.f) * self.Cp)
+        self.d_conv  = self.Lz / (1 + self.r)
+        self.z_cross = self.Lz - self.d_conv
+        self.H = self.epsilon / (self.d_conv * self.Cp)
         self.Lx = self.Ly = self.Lz*aspect_ratio
             
         super(ConstHeating, self).__init__(nx=nx, ny=ny, nz=nz, Lx=self.Lx, Ly=self.Ly, Lz=self.Lz, **kwargs)
@@ -382,7 +382,7 @@ class ConstHeating(Atmosphere):
         from scipy.optimize import brentq
         Lz_guess = (np.exp(n_rho_cz/np.abs((m_ad-self.epsilon)))-1)*(self.g/self.Cp)
         r = brentq(self.depth_root_find, Lz_guess/2, Lz_guess*2, maxiter=int(1e3), full_output=True)
-        return r[0] / (1 - self.f)
+        return r[0] * (1 + self.r)
     
     def _set_atmosphere_parameters(self, gamma, epsilon):
         # polytropic atmosphere characteristics
@@ -661,7 +661,7 @@ class ConstHeating(Atmosphere):
             if self.dimensions > 2:
                 f['ny']             = self.ny
             f['nz']             = self.nz
-            f['f']             = self.f
+            f['r']             = self.r
             f['H']             = self.H
             f['m_ad']           = self.m_ad
             f['epsilon']        = self.epsilon
