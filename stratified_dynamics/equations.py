@@ -678,22 +678,26 @@ class FC_equations_2d_kappa_mu(FC_equations_2d):
         self.problem.substitutions['L_visc_u'] = " μ/rho0*(Lap(u, u_z) + 1/3*Div(dx(u), dx(v), dx(w_z)) + del_ln_μ*σxz)"
         self.problem.substitutions['L_visc_v'] = " μ/rho0*(Lap(v, v_z) + 1/3*Div(dy(u), dy(v), dy(w_z)) + del_ln_μ*σyz)"
         self.problem.substitutions['L_visc_w'] = " μ/rho0*(Lap(w, w_z) + 1/3*Div(  u_z, dz(v), dz(w_z)) + del_ln_μ*σzz)"                
-        
-        self.problem.substitutions['R_visc_u'] = "L_visc_u*(exp(-ln_rho1)-1)"
-        self.problem.substitutions['R_visc_v'] = "L_visc_v*(exp(-ln_rho1)-1)"
-        self.problem.substitutions['R_visc_w'] = "L_visc_w*(exp(-ln_rho1)-1)"
+      
+        if 'EVP' in self.problem_type:
+            self.problem.substitutions['R_visc_u'] = "0"
+            self.problem.substitutions['R_visc_v'] = "0"
+            self.problem.substitutions['R_visc_w'] = "0"
+        else:
+            self.problem.substitutions['R_visc_u'] = "L_visc_u*(exp(-ln_rho1)-1)"
+            self.problem.substitutions['R_visc_v'] = "L_visc_v*(exp(-ln_rho1)-1)"
+            self.problem.substitutions['R_visc_w'] = "L_visc_w*(exp(-ln_rho1)-1)"
 
         self.problem.substitutions['κT0'] = "(del_ln_κ*T0_z + T0_zz)"
         self.problem.substitutions['κT1'] = "(del_ln_κ*T1_z + Lap(T1, T1_z))"
        
         if bg_TE:
-            if 'EVP' in self.problem_type:
-                self.problem.substitutions['L_thermal']    = " 0 "
-                self.problem.substitutions['R_thermal']    = " κ*Cv_inv*κT1/rho_full"
-            else:
-                self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT1)"
-                self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT1*(exp(-ln_rho1)-1))"
+            self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT1)"
             self.problem.substitutions['source_terms'] = " 0"        
+            if 'EVP' in self.problem_type:
+                self.problem.substitutions['R_thermal']    = " 0 "
+            else:
+                self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT1*(exp(-ln_rho1)-1))"
         else:
             self.problem.substitutions['L_thermal']    = " κ/rho0*Cv_inv*(κT0*-1*ln_rho1 + κT1)"
             self.problem.substitutions['R_thermal']    = " κ/rho0*Cv_inv*(κT0*(exp(-ln_rho1)+ln_rho1) + κT1*(exp(-ln_rho1)-1))"

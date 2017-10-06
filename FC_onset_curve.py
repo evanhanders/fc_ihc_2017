@@ -26,7 +26,7 @@ Options:
     --Taylor=<Ta>                       If not None, solve for rotating convection
 
     #Const Heating options
-    --n_rho=<n_rho>                     nrho of convecting region [default: 3]
+    --n_rho_cz=<n_rho_cz>                     nrho of convecting region [default: 3]
     --epsilon=<epsilon>                 epsilon of const heating atmo  [default: 0.5]
     --f=<f>                             The f-parameter of the const heating atmo [default: 0.5]
     --gamma=<gamma>                     Gamma of atmosphere [default: 5/3]

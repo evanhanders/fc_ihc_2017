@@ -419,7 +419,7 @@ class ConstHeating(Atmosphere):
         self.del_s0['g'] = (1/(self.gamma-1)) * self.T0_z['g']/self.T0['g'] - self.del_ln_rho0['g']
         s0 = self._new_ncc()
         self.del_s0.antidifferentiate('z', ('right', 0), out=s0)
-        self.delta_s = s0.interpolate(z=self.Lz)['g'][0][0] - s0.interpolate(z=self.z_cross)['g'][0][0]
+        self.delta_s = np.mean(s0.interpolate(z=self.Lz)['g'][0]) - np.mean(s0.interpolate(z=self.z_cross)['g'][0])
         print(self.delta_s)
  
         self.T0.set_scales(1, keep_data=True)
@@ -430,14 +430,21 @@ class ConstHeating(Atmosphere):
         self.P0.set_scales(1, keep_data=True)
         
         if self.constant_diffusivities:
-            scale = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+            self.rho0.set_scales(1, keep_data=True)
+            self.T0.set_scales(1, keep_data=True)
+            #scale = self.rho0['g']
+            scale = self.T0['g']
+            scale = 1
             self.scale['g']            = scale
             self.scale_continuity['g'] = scale
             self.scale_momentum['g']   = scale
             self.scale_energy['g']     = scale
         else:
             # consider whether to scale nccs involving chi differently (e.g., energy equation)
-            scale = (1 - self.H * self.Lz)*(self.Lz - self.z) + (self.H/2)*(self.Lz**2 - self.z**2) + 1
+            self.rho0.set_scales(1, keep_data=True)
+            self.T0.set_scales(1, keep_data=True)
+            #scale = self.rho0['g']
+            scale = self.T0['g']
             self.scale['g']            = scale
             self.scale_continuity['g'] = scale
             self.scale_momentum['g']   = scale
