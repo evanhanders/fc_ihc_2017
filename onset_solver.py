@@ -36,7 +36,7 @@ class OnsetSolver:
 
     def __init__(self, eqn_set=0, atmosphere=0, ra_steps=(1, 1e3, 40, True),
                  kx_steps=(0.01, 1, 40, True), ky_steps=None, threeD=False, atmo_kwargs={}, eqn_args=[],
-                 eqn_kwargs={}, bc_kwargs={}):
+                 eqn_kwargs={}, bc_kwargs={}, sparse=False):
         """
         Initializes the onset solver by specifying the equation set to be used
         and the type of atmosphere that will be solved on.  Also specifies
@@ -80,6 +80,7 @@ class OnsetSolver:
         self._eqn_args    = eqn_args
         self._eqn_kwargs  = eqn_kwargs
         self._bc_kwargs   = bc_kwargs
+        self.sparse       = sparse
         self.cf = CriticalFinder(self.solve_problem, CW)
 
     def find_crits(self, tol=1e-3, pts_per_curve=1000, 
@@ -184,7 +185,7 @@ class OnsetSolver:
         problem = self.atmosphere.get_problem()
 
         #Solve using eigentools Eigenproblem
-        self.eigprob = Eigenproblem(problem)
+        self.eigprob = Eigenproblem(problem, sparse=self.sparse)
         max_val, gr_ind, freq = self.eigprob.growth_rate({})
         #Initialize atmosphere
         if self.cf.rank == 0:

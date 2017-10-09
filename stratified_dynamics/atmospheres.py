@@ -420,7 +420,6 @@ class ConstHeating(Atmosphere):
         s0 = self._new_ncc()
         self.del_s0.antidifferentiate('z', ('right', 0), out=s0)
         self.delta_s = np.mean(s0.interpolate(z=self.Lz)['g'][0]) - np.mean(s0.interpolate(z=self.z_cross)['g'][0])
-        print(self.delta_s)
  
         self.T0.set_scales(1, keep_data=True)
         self.rho0.set_scales(1, keep_data=True)
@@ -485,7 +484,6 @@ class ConstHeating(Atmosphere):
         # min of global quantity
         atmosphere.min_BV_time = self.domain.dist.comm_cart.allreduce(np.min(np.sqrt(np.abs(self.g*self.del_s0['g']/self.Cp))), op=MPI.MIN)
         atmosphere.freefall_time = np.sqrt(self.d_conv/self.g)
-        print(self.delta_s)
         atmosphere.buoyancy_time = np.sqrt(np.abs(self.d_conv / (self.g * self.delta_s / self.Cp)))
         
         logger.info("atmospheric timescales:")
@@ -499,9 +497,28 @@ class ConstHeating(Atmosphere):
         self.Rayleigh, self.Prandtl = Rayleigh, Prandtl
 
         # set nu and chi at top based on Rayleigh number
-        self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**3 * np.abs(self.delta_s/self.Cp) * self.g) / Rayleigh)
-        #self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**4 * self.epsilon * self.g) / Rayleigh)
+
+        #The first moment of the superadiabatic temperature gradient is where the rayleigh number should be set.  
+        TgradS        = self._new_ncc()
+        TgradS_int    = self._new_ncc()
+        TgradS_L      = self._new_ncc()
+        TgradS_L_int  = self._new_ncc()
+        self.del_s0.set_scales(1, keep_data=True)
+        TgradS['g'] = self.T0['g']*self.del_s0['g']/self.Cp
+        TgradS.set_scales(1, keep_data=True)
+        TgradS_L['g'] = self.z*TgradS['g']
+        TgradS.antidifferentiate('z', ('right', 0), out=TgradS_int)
+        TgradS_L.antidifferentiate('z', ('right', 0), out=TgradS_L_int)
+
+        first_moment = np.mean(TgradS_L_int.interpolate(z=self.z_cross)['g'])/np.mean(TgradS_int.interpolate(z=self.z_cross)['g'])
+
+        nu_moment    = np.sqrt(Prandtl * (self.d_conv**4 * np.abs(np.mean(self.del_s0.interpolate(z=first_moment)['g'])/self.Cp) * self.g) / Rayleigh)
+
+        self.nu_top  = nu_top = nu_moment * np.mean(self.rho0.interpolate(z=first_moment)['g'])
         self.chi_top = chi_top = nu_top/Prandtl
+
+        #self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**3 * np.abs(self.delta_s/self.Cp) * self.g) / Rayleigh)
+        #self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**4 * self.epsilon * self.g) / Rayleigh)
 
         if self.constant_diffusivities:
             # take constant nu, chi

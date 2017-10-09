@@ -42,6 +42,8 @@ Options:
                                             iteratively solve for the exact critical using
                                             optimization routines
     --out_dir=<out_dir>                 Base output dir [default: ./]
+
+    --sparse                            If flagged, use sprase solve
 """
 import logging
 logger = logging.getLogger(__name__)
@@ -162,7 +164,8 @@ solver = OnsetSolver(
             atmo_kwargs=atmo_kwargs,
             eqn_args=eqn_args,
             eqn_kwargs=eqn_kwargs,
-            bc_kwargs=bc_kwargs)
+            bc_kwargs=bc_kwargs,
+            sparse=args['--sparse'])
 
 #############################################
 #Crit find!
