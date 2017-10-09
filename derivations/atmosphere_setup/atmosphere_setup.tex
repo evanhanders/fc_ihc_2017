@@ -402,5 +402,22 @@ boundary conditions, but...I'm not sure.  I really need to think carefully.
 I need to consider how much mass I have, and how my atmosphere is going to evolve in response
 to the boundary conditions that I put on the edges of it.
 
+\subsection{Rayleigh Number}
+I've done a fair number of tests, and while I don't know exactly \emph{why} this is the case,
+the best definition of the Rayleigh number I've found is:
+\begin{equation}
+\text{Ra} = \frac{g d_{conv}^4 \bigg|\frac{\grad S}{c_P}\bigg|}{\nu \chi},
+\end{equation}
+which means that Ra$\,\propto \rho_0^2\grad S$, where here $S$ is the specific entropy. If
+you set the entropy at the \emph{first moment of the superadiabatic temperature gradient}, that is
+at
+\begin{equation}
+L_{\mu(\grad T - \grad T_{ad})} = \frac{\int_{z_{\text{cross}}}^{L_z} z T \frac{\grad S}{c_P} dz}
+{\int_{z_{\text{cross}}}^{L_z} T \frac{\grad S}{c_P}dz},
+\end{equation}
+then this seems to be a pretty good definition of Ra that is \emph{fairly} constant across
+many different stratifications (e.g., the critical value is 200-300 for $n_\rho$ between
+0.01 to 8).
+
 \bibliography{../biblio.bib}
 \end{document}
