@@ -59,181 +59,98 @@ An abstract will go here eventually
 \end{enumerate}
 
 \section{Experiment} 
+We study direct numerical simulations of an ideal gas whose equation of
+state is $P = \rho T$ and whose adiabatic index is $\gamma = 5/3$
+by evolving the fully compressible Navier-Stokes equations, 
 \label{sec:experiment}
+\begin{align}
+&\begin{aligned}
+&\frac{\partial \ln\rho}{\partial t} + \grad\cdot\bm{u} 
+    = -\bm{u}\cdot\grad\ln\rho,
+	\label{eqn:continuity_eqn}
+\end{aligned}\\
+&\begin{aligned}
+\frac{\partial\bm{u}}{\partial t} + \bm{u}\cdot\grad\bm{u} =
+- \grad T - T \grad \ln \rho + \bm{g} - \grad\cdot\stressT,
+\label{eqn:momentum_eqn}
+\end{aligned}\\
+&\begin{aligned}
+\frac{\partial T}{\partial t} + \bm{u}\cdot\grad T
++ (\gamma-1)T\grad\cdot\bm{u} + \frac{1}{\rho c_V}
+\grad\cdot\left(-\kappa\grad T\right) = - (\stressT\cdot\grad)\cdot\bm{u} + \kappa H,
+	\label{eqn:energy_eqn}
+\end{aligned}
+\end{align}
+with the viscous stress tensor given by
+\begin{equation}
+\Pi_{ij} \equiv -\mu\left(\frac{\partial u_i}{\partial x_j} + 
+\frac{\partial u_j}{\partial x_i} - \frac{2}{3}\delta_{ij}\grad\cdot\bm{u}\right),
+	\label{eqn:stress_tensor}
+\end{equation}
+where $\delta_{ij}$ is the Kronecker delta function.  In Eq. \ref{eqn:energy_eqn}, $H$
+specifies the magnitude of internal heating, and in this study we study $H$ which is
+constant in space and time.  We assume here that $\kappa$ and $\mu$, the thermal
+conductivity and dynamic viscosity, are constant in space and time.
 
-\subsection{General system info and temperature profile}
-We choose a parameter, $\epsilon$, which sets the initial scale of gravity,
+The initial atmosphere is constructed under the assumptions of hydrostatic equlibrium
+and thermal equilibrium in the presence of constant gravity, $g = (\gamma - 1)^{-1} + 1 - \epsilon$,
+where $\epsilon$ is a control parameter which sets the superadiabaticity and is similar to
+the superadiabatic excess in polytropic atmospheres \cite{anders&brown2017, graham1975}.
+An atmosphere which satisfies these initial conditions takes the form
 \begin{equation}
-g \equiv m_{ad} + 1 - \epsilon,
+T_0(z) = -\frac{H}{2} z^2 + (H L_z - 1) z + \left(1 - \frac{H}{2}L_z^2 + L_z\right),
+\qquad P_0(z) = \left(\frac{\xi + \grad T_0}{\xi - \grad T_0} \cdot\frac{\xi + 1}{\xi - 1}\right)^{g/\xi},
 \end{equation}
-where $m_{ad} \equiv (\gamma - 1)^{-1}$, and $\gamma = c_P / c_V = 5/3$.  The atmosphere
-has a constant internal heating term, such that the energy equation looks like
-\begin{equation}
-\frac{\partial}{\partial t}\left(\left[\rho\frac{|\bm{u}|^2}{2} + c_v T + \phi\right]\right)
-+ \grad\cdot\left(\bm{F}_{\text{conv}} + \bm{F}_{\text{cond}}\right) = \kappa H,
-\end{equation}
-where $H$ is an internal heating term.  In the initial, static, conductive state, the
-conductive flux must balance the internal heating term,
-\begin{equation}
-\grad\cdot\left(-\kappa\grad T_{c}\right) = \kappa H,
-\end{equation}
-A useful form of the initial temperature gradient in such a system is
-\begin{equation}
-\grad T_{c} = - 1 + H (L_z - z).
-\end{equation}
-This initial conductive solution is \emph{not} the adiabatic solution to this atmosphere,
-\begin{equation}
-\grad T_{ad} = -\frac{g}{c_P} = -1 + \frac{\epsilon}{c_P}.
-\end{equation}
-If we integrate the conductive solution, our initial temperature profile is
-$$
-T_c(z) = (H L_z - 1) z - \frac{H}{2}z^2 + C
-$$
-and if we want $T_c(L_z) = T_t$,
-\begin{equation}
-T_c(z) = -\frac{H}{2}z^2 - (1 - H L_z) z + \left(T_t - \frac{H}{2}L_z^2 + L_z\right).
-\end{equation}
-So our initial temperature gradient is now quadratic.
+where $L_z$ is the depth of the atmosphere, $\xi \equiv \sqrt{1 + 2H}$, 
+$\grad T_0 = \partial_z T_0(z) = -H z + (H_Lz - 1)$,
+and the density profile is $\rho_0(z) = P_0(z)/T_0(z)$.
 
-The initial \emph{superadiabatic temperature gradient} is an important quantity, as it
-determines whether or not the atmosphere is stable to convection.  This gradient
-in these systems is
+Stratified systems evolve towards a characteristic adiabatic profile.  An adiabatically
+stratified atmosphere composed of an ideal gas in hydrostatic equilibrium has a
+temperature gradient specified by the gravity, $\grad T_{ad} = -\bm{g} / c_P$, where
+$c_P = \gamma/(\gamma-1)$.  In these internally heated systems,
 \begin{equation}
-\grad T_{c} - \grad T_{ad} = H(L_z - z) - \frac{\epsilon}{c_P}.
+\grad T_0 - \grad T_{ad} = H(L_z - z) - \frac{\epsilon}{c_P},
 \end{equation}
-When this quantity is zero, the atmosphere is carrying the maximum amount of flux
-that conductivity can carry.  When this value is less than zero, the atmosphere
-requires convection to carry the flux.  Solving for a generalized zero-point, we
-find that
+and there is a special point in the initial atmosphere, $z_{\text{cross}} \equiv L_z - \epsilon / H c_P$,
+at which the temperature gradient is exactly the adiabatic temperature gradient.  Above that point,
+the temperature gradient is superadiabatic and unstable to convection.  Below that point,
+the temperature gradient is subadiabatic.  Thus, the depth of the region that is convectively
+unstable is $d_{\text{conv}} = L_z - z_{\text{cross}} = \epsilon / H c_P$.  From this,
+we retrieve the magnitude of the internal heating term,
 \begin{equation}
-z_{\text{cross}} \equiv L_z - \frac{\epsilon}{H c_P}.
-\end{equation}
-In order for the atmosphere to have any region that is unstable to convection,
-we require that $0 < \epsilon / ( H c_P ) < L_z$.  In the case that 
-$\epsilon / ( H c_P ) < L_z$, the whole atmosphere is unstable to convection.
-Further, the anticipated length scale of the convecting region of the atmosphere
-is the full atmosphere above $z_{\text{cross}}$, or
-\begin{equation}
-d_{\text{conv}} = L_z - z_{\text{cross}} = \frac{\epsilon}{H c_P}
-\end{equation}
-
-I think there are two natural control parameters of this system:
-\begin{enumerate}
-\item $f \equiv z_{\text{cross}} / L_z$, the fraction of the atmosphere that is stable
-($f = 0$ means the full atmosphere convects, $f = 0.5$ means that the upper half convects, etc).
-This \emph{should} be the parameter that determines the depth of the stable layer.
-\item $\epsilon$, the deviation of the initial temperature gradient (at the top of the atmosphere)
-from the adiabatic temperature gradient. This \emph{should} be the parameter that determines
-the depth of the stable layer.
-\end{enumerate}
-By specifying these two parameters, we retrieve the magnitude of the internal heating,
-$ f = 1 - \epsilon / (H c_P L_z)$
-\begin{equation}
-H = \frac{\epsilon}{L_z c_P (1 - f)}.
+H \equiv \frac{\epsilon}{d_{\text{conv}} c_P}.
 \end{equation}
 
-\subsection{Initial density stratification}
+If $L_z <= d_{\text{conv}}$, the whole atmosphere is unstable or marginally stable.
+If $L_z > d_{\text{conv}}$, there is a stable radiative zone beneath the convective
+zone.  We specify the depth of this radiative zone through a new parameter,
+$r \equiv L_z/d_{\text{conv}} - 1$.  We specify the depth of the convective zone by
+specifying the number of density scale heights, $n_\rho$, it spans.  To achieve this we
+use an iterative, root finding algorithm find when
+$f(L_z) = \rho_0(z_{\text{cross}})/\rho_0(L_z) -  e^{n_\rho}$ is zero.
 
-The initial density profile is set by hydrostatic equilibrium,
+Diffusivities in the system are specified by choosing a value of the Rayleigh
+Number and Prandtl number.  The thermal diffusivity, $\chi = \kappa / \rho$ and
+viscous diffusivity, $\nu = \mu / \rho$ are constrained by
 \begin{equation}
-\grad\ln\rho_c = -\frac{g + \grad T_c}{T_c} = -\grad\ln T_c- \frac{g}{T_c}.
+\text{Ra}(z) = \frac{g d_{\text{conv}}^4 \bigg|\grad s / c_P\bigg|}{\nu\chi} = 
+\frac{g d_{\text{conv}}^4}{\kappa\mu}\bigg|\frac{\grad s}{c_P}(z)\bigg|\rho_0^2(z),\qquad
+\text{Pr} = \frac{\nu}{\chi},
 \end{equation}
-If we integrate over this function, the first term is super easy, and we end up having
+where 
 \begin{equation}
-\ln\rho_c = - \ln T_c - \int\frac{g}{T_c}dz + \xi,
+\frac{\grad s}{c_P} = \frac{1}{\gamma} \grad\ln T - \frac{\gamma-1}{\gamma} \grad \ln \rho.
 \end{equation}
-where $\xi$ is a constant.  The next integral is harder.  In general, this integral has the form
+We specify the value of Ra at the first moment of the $\grad T - \grad T_{ad} = T \grad s / c_P$,
 \begin{equation}
-\int \frac{1}{Az^2 + Bz + C}dz = \frac{2}{\sqrt{4 AC - B^2}} \tan^{-1}\left(\frac{2 Az + B}{\sqrt{4 AC - B}}\right).
+L_{sm1} = \frac{\int_{z_{\text{cross}}}^{L_z} z T\grad s dz}{\int_{z_{\text{cross}}}^{L_z} T\grad s dz}.
 \end{equation}
-For our specific implementation, we get our constants from the temperature profile,
-$$
-A = -H / 2 \qquad B = (HL_z - 1) \qquad C = \left(T_t - \frac{H}{2}L_z^2 + L_z\right),
-$$
-and note that $2Az + B = -Hz + (HL_z - 1) = \grad T_c$.  Note also that
-$4AC - B^2 = -2H(T_t - (H/2)L_z^2 + L_z) - (H^2 L_z^2 - 2HL_z + 1) = -2HT_t - 1$,
-so $\sqrt{4AC - B^2} = i\chi$, where $i = \sqrt{-1}$ and $\chi = \sqrt{1 + 2HT_t}$.
-With these definitions in hand, we find that
-\begin{equation}
-\ln\rho_c = -\ln T_c + \frac{2 g i}{\chi}\tan^{-1}\left(-i\frac{\grad T_c}{\chi}\right)
-\end{equation}
-Now it's important to know that there's a neat identity: $\tan^{-1}(-i A) = -i\tanh^{-1}(A)$,
-and plugging this in we get
-\begin{equation}
-\ln\rho_c = -\ln T_c + \frac{2 g}{\chi}\tanh^{-1}\left(\frac{\grad T_c}{\chi}\right).
-\end{equation}
-At this point, there's another useful identity: $\tanh^{-1}(A) = (1/2)\ln([1 + A]/[1 - A])$,
-so the density profile is
-\begin{equation}
-\ln\rho_c = -\ln T_c + \frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\right) + \xi.
-\end{equation}
-In general, this profile is valid for any value of $\rho_t$, such that
-\begin{equation}
-\xi = \ln\rho_t + \ln T_t - \frac{g}{\chi}\ln\left(\frac{\chi - 1}{\chi + 1}\right),
-\end{equation}
-where $\grad T_c(L_z) = -1$ has already been previously specified.  This means that the general,
-full form of the log density is
-\begin{equation}
-\ln\left(\frac{\rho_c}{\rho_t}\right) = -\ln\left(\frac{T_c}{T_t}\right) + 
-\frac{g}{\chi}\ln\left(\frac{\chi + \grad T_c}{\chi - \grad T_c}\cdot\frac{\chi + 1}{\chi - 1}\right)
-\end{equation}
+In the limit of classic, polytropic atmospheres, this reduces to the midplane of the atmosphere,
+which is a commonly chosen location to specify the value of Ra.  We choose this location as it
+minimizes the variation of the critical value of Ra as other parameters ($n_\rho$, $r$, $\epsilon$)
+change.
 
-\subsubsection{Specifying the depth of the atmosphere}
-I still want $n_\rho$ to be the parameter that specifies the depth of the parameter,
-and I specifically want it to specify the number of density scale heights in the part of the
-atmosphere that carries a superadiabatic flux.  
-
-To get started, I need to consider the value of $\ln\rho_c$ at the bottom of the atmosphere,
-$$
-\ln\rho_c(z=0) = n_\rho = -\ln\left(\frac{T_c(z=0)}{T_t}\right)
-+ \frac{g}{\chi}\ln\left(\frac{(\chi + \grad T_c(z=0))(\chi + 1)}{(\chi - \grad T_c(z=0))(\chi - 1)}\right)
-$$
-And we have a problem here, right?  The stuff on the RHS is a complex function of $\epsilon$ and
-$L_z$, and we're trying to specify $L_z$ using $n_\rho$, not the other way around.
-I'm going to consistently move all of the terms from the RHS to the LHS, then
-non-dimensionalize and assume $T_t = \rho_t = 1$, making the function
-\begin{equation}
-f(L_{z}) = n_\rho + \ln\left(T_t - \frac{H}{2}L_z^2 + L_z\right) - 
-\frac{g}{\chi}\ln\left(\frac{\chi^2 - 1 + HL_z(\chi + 1)}{\chi^2 - 1 - HL_z(\chi - 1)}\right).
-\end{equation}
-When this function is zero, $L_z$ appropriately captures the right number of density scale heights.
-
-Since we have set up all of our non-dimensionalizations at the \emph{top} of the atmosphere, and we
-are building atmospheres which have CZs above RZs, we can actually really simply specify the
-density stratification of the CZ.  The CZ is an atmosphere with $f = 0$ whose $z = 0$ starts
-at $z_{cross}$.  If we set $n_\rho = n_{\rho, cz}$ and set $f = 0$, and then find the appropriate
-$L_z$ from $f(L_z)$, that will give us $L_{z-cz}$.  And since that is a \emph{depth} from
-the top of the atmosphere, we can use that depth to determine how big the rest of the
-atmosphere should be for our ``true'' value of $f$. That is,
-\begin{equation}
-L_z = \frac{L_{z-cz}}{1 - f}.
-\end{equation}
-This way, by adding the RZ, we're actually extending the atmosphere captured down into the RZ,
-rather than gobbling up part of the CZ with the RZ.  In order to find $L_{z-cz}$, a
-numerical root-finding algorithm is the logical choice.
-
-\subsection{Musings}
-
-There are still three parameters in these systems that need to be figured out:
-\begin{enumerate}
-\item thermal diffusivity
-\item viscous diffusvitiy
-\end{enumerate}
-One of these parameter is free,
-\begin{equation}
-\text{Pr} = \frac{\nu}{\chi}.
-\end{equation}
-We're not going to mess with that.
-
-There will be some type of Rayleigh number in these systems,
-\begin{equation}
-\text{Ra} = \frac{\text{stuff that comes from the atmosphere}}{\nu \chi},
-\end{equation}
-but I need to think a little more and spend some time with the equations to
-figure out what this is.
-
-And then as for the stratification....well, I need to figure out what $n_{\rho}$ I'm specifying.
-The $n_\rho$ of the corresponding adiabatic polytrope?  
 
 \section{Results \& Discussion}
 \label{sec:results}
