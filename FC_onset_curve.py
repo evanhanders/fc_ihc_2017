@@ -95,6 +95,7 @@ epsilon = float(args['--epsilon'])
 r = float(args['--r'])
 file_name += '_eps{}'.format(args['--epsilon'])
 file_name += '_nrho{}'.format(args['--n_rho_cz'])
+file_name += '_r{}'.format(args['--r'])
 try:
     gamma = float(args['--gamma'])
 except:

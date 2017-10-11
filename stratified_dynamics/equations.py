@@ -556,8 +556,8 @@ class FC_equations(Equations):
         analysis_scalar.add_task("integ(right(kappa_flux_z) - left(kappa_flux_z),'x')/Lx",name="flux_equilibration")
         analysis_scalar.add_task("integ((right(kappa_flux_z) - left(kappa_flux_z))/left(kappa_flux_z),'x')/Lx",name="flux_equilibration_pct")
 
-        analysis_scalar.add_task("interp(M_ad_rms,  z=Lsm1)", name="Ma_ad_Lsm1")
-        analysis_scalar.add_task("interp(Re_rms,  z=Lsm1)", name="Re_Lsm1")
+        analysis_scalar.add_task("interp(Ma_ad_rms,  z={})".format(self.Lsm1), name="Ma_ad_Lsm1")
+        analysis_scalar.add_task("interp(Re_rms,     z={})".format(self.Lsm1), name="Re_Lsm1")
             
         analysis_tasks['scalar'] = analysis_scalar
 
