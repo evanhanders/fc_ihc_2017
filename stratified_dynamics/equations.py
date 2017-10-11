@@ -197,6 +197,8 @@ class FC_equations(Equations):
         self.problem.parameters['IH'] = self.IH
         self.problem.parameters['IH_flux'] = self.IH_flux
 
+        self.problem.parameters['Lsm1'] = self.Lsm1
+
         # Thermo subs that are used later, but before set_subs() is called; okay or not okay?
         self.problem.parameters['delta_s_atm'] = self.delta_s
 
@@ -553,6 +555,9 @@ class FC_equations(Equations):
         analysis_scalar.add_task("log(left(plane_avg(rho_full))/right(plane_avg(rho_full)))", name="n_rho")
         analysis_scalar.add_task("integ(right(kappa_flux_z) - left(kappa_flux_z),'x')/Lx",name="flux_equilibration")
         analysis_scalar.add_task("integ((right(kappa_flux_z) - left(kappa_flux_z))/left(kappa_flux_z),'x')/Lx",name="flux_equilibration_pct")
+
+        analysis_scalar.add_task("interp(M_ad_rms,  z=Lsm1)", name="Ma_ad_Lsm1")
+        analysis_scalar.add_task("interp(Re_rms,  z=Lsm1)", name="Re_Lsm1")
             
         analysis_tasks['scalar'] = analysis_scalar
 

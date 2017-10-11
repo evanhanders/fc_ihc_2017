@@ -510,11 +510,11 @@ class ConstHeating(Atmosphere):
         TgradS.antidifferentiate('z', ('right', 0), out=TgradS_int)
         TgradS_L.antidifferentiate('z', ('right', 0), out=TgradS_L_int)
 
-        first_moment = np.mean(TgradS_L_int.interpolate(z=self.z_cross)['g'])/np.mean(TgradS_int.interpolate(z=self.z_cross)['g'])
+        self.Lsm1 = np.mean(TgradS_L_int.interpolate(z=self.z_cross)['g'])/np.mean(TgradS_int.interpolate(z=self.z_cross)['g'])
 
-        nu_moment    = np.sqrt(Prandtl * (self.d_conv**4 * np.abs(np.mean(self.del_s0.interpolate(z=first_moment)['g'])/self.Cp) * self.g) / Rayleigh)
+        nu_moment    = np.sqrt(Prandtl * (self.d_conv**4 * np.abs(np.mean(self.del_s0.interpolate(z=self.Lsm1)['g'])/self.Cp) * self.g) / Rayleigh)
 
-        self.nu_top  = nu_top = nu_moment * np.mean(self.rho0.interpolate(z=first_moment)['g'])
+        self.nu_top  = nu_top = nu_moment * np.mean(self.rho0.interpolate(z=self.Lsm1)['g'])
         self.chi_top = chi_top = nu_top/Prandtl
 
         #self.nu_top = nu_top = np.sqrt(Prandtl * (self.d_conv**3 * np.abs(self.delta_s/self.Cp) * self.g) / Rayleigh)
@@ -593,10 +593,10 @@ class ConstHeating(Atmosphere):
         self.nu_r.set_scales(1, keep_data=True)
 
         # determine characteristic timescales; use chi and nu at middle of domain for bulk timescales.
-        self.thermal_time = self.d_conv**2/(self.chi.interpolate(z=self.z_cross)['g'][0])
+        self.thermal_time = self.d_conv**2/(self.chi.interpolate(z=0)['g'][0])
         self.top_thermal_time = 1/chi_top
 
-        self.viscous_time = self.d_conv**2/(self.nu.interpolate(z=self.z_cross)['g'][0])
+        self.viscous_time = self.d_conv**2/(self.nu.interpolate(z=0)['g'][0])
         self.top_viscous_time = 1/nu_top
 
         if self.dimensions == 2:
