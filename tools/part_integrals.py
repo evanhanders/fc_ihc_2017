@@ -15,13 +15,18 @@ def integrate(arg0, bases, starts, ends, out=None):
     basis = arg0.domain.get_basis_object(bases[-1])
     start = starts[-1]
     end   = ends[-1]
+    if start > basis.interval[1] or start < basis.interval[0]:
+        raise Exception('start value outside of basis bounds')
+    if end > basis.interval[1] or end < basis.interval[0]:
+        raise Exception('End value outside of basis bounds')
     f     = arg0.domain.new_field()
     f_int = arg0.domain.new_field()
     f.set_scales(arg0.domain.dealias, keep_data=False)
     f['g'] = arg0.evaluate().data
     f.antidifferentiate(basis, ('left', 0), out=f_int)
-    f_int.interpolate(**{str(basis): float(start)}, out=f)
-    f['g'] -= f_int.interpolate(**{str(basis):float(end)})['g']
+    print(dir(basis), basis.interval)
+    f_int.interpolate(**{str(basis): float(end)}, out=f)
+    f['g'] -= f_int.interpolate(**{str(basis):float(start)})['g']
     return f
 
 
