@@ -7,7 +7,17 @@ from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__.split('.')[-1])
 
+try:
+    from tools.part_integrals import *
+except:
+    from sys import path
+    path.insert(0, './tools')
+    from ..tools.part_integrals import *
+
+
+
 from dedalus import public as de
+
 
 
 class Equations():
@@ -558,6 +568,10 @@ class FC_equations(Equations):
 
         analysis_scalar.add_task("vol_avg(interp(Ma_ad_rms,  z={}))".format(self.Lsm1), name="Ma_ad_Lsm1")
         analysis_scalar.add_task("vol_avg(interp(Re_rms,     z={}))".format(self.Lsm1), name="Re_Lsm1")
+
+        analysis_scalar.add_task("vol_avg(part_integ(Ma_ad_rms,  'z', [{},], [{},]))".format(self.z_cross, self.Lz), name="cz_Ma_ad_Lsm1")
+        analysis_scalar.add_task("vol_avg(part_integ(Re_rms,     'z', [{},], [{},]))".format(self.z_cross, self.Lz), name="cz_Re_Lsm1")
+        analysis_scalar.add_task("vol_avg(part_integ(z,     'z', [{},], [{},]))".format(self.z_cross, self.Lz), name="cz_test")
             
         analysis_tasks['scalar'] = analysis_scalar
 

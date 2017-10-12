@@ -151,6 +151,31 @@ which is a commonly chosen location to specify the value of Ra \citep{hurlburt&a
 minimizes the variation of the critical value of Ra as other parameters ($n_\rho$, $r$, $\epsilon$)
 change.
 
+\subsection{Stability}
+We decompose thermodynamic variables such that $\ln\rho = (\ln\rho)_0 + (\ln\rho)_1$
+and $T = T_0 + T_1$.  We assume that the background terms are constant with respect to
+time, and this allows us to subtract out the background thermal equilibrium and
+hydrostatic equilibrium.  The \emph{linearized} equations of motion are then
+\begin{equation}
+\begin{split}
+\frac{\partial (\ln\rho)_1}{\partial t} + \grad\cdot\bm{u} + \bm{u}\cdot\grad(\ln\rho)_0 = 0 \\
+\frac{\partial \bm{u}}{\partial t} + \grad T_1 + T_1 \grad(\ln\rho)_0 + T_0 \grad(\ln\rho)_1
++ \grad \cdot\stressT = 0 \\
+\frac{\partial T_1}{\partial t} + \bm{u}\cdot\grad T_0 + (\gamma-1)T_0\grad\cdot\bm{u} - \kappa e^{-(\ln\rho)_0}
+\grad^2 T_1 = 0
+\end{split}
+\end{equation}
+We assume that all fluctuations $\{ T_1, (\ln\rho)_1, \bm{u} \} = f(z) g(x, y) e^{i\omega t}$, and we
+use Dedalus to solve eigenvalue problems to determine when $\omega = 0$.  From this, we find
+Fig. \ref{fig:onset_curves}.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{./figs/onset_figure.png}
+\caption{The value of the critical Rayleigh number and normalized critical wavenumber
+as the control parameters of the problem are varied. \label{fig:onset_curves}}
+\end{figure}
+
 
 \section{Results \& Discussion}
 \label{sec:results}
