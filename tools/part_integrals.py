@@ -23,8 +23,8 @@ def integrate(arg0, bases, starts, ends, out=None):
     f_int = arg0.domain.new_field()
     f.set_scales(arg0.domain.dealias, keep_data=False)
     f['g'] = arg0.evaluate().data
+    print(arg0, f['g'])
     f.antidifferentiate(basis, ('left', 0), out=f_int)
-    print(dir(basis), basis.interval)
     f_int.interpolate(**{str(basis): float(end)}, out=f)
     f['g'] -= f_int.interpolate(**{str(basis):float(start)})['g']
     return f

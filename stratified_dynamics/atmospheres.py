@@ -679,6 +679,8 @@ class ConstHeating(Atmosphere):
                 f['ny']             = self.ny
             f['nz']             = self.nz
             f['r']             = self.r
+            f['z_cross']       = self.z_cross
+            f['d_conv']        = self.z_cross
             f['H']             = self.H
             f['m_ad']           = self.m_ad
             f['epsilon']        = self.epsilon
