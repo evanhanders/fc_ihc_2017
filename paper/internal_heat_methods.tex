@@ -1,6 +1,8 @@
-%\documentclass[iop]{emulateapj}
-\documentclass[aps, pre, onecolumn, nofootinbib, notitlepage, groupedaddress, amsfonts, amssymb, amsmath, longbibliography]{revtex4-1}
+\documentclass[twocolumn]{aastex61}
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \hypersetup{
@@ -27,8 +29,6 @@
 
 \newcommand{\appropto}{\mathpalette\approptoinn\relax}
 
-\newcommand\mnras{{MNRAS}}%
-
 \begin{document}
 \author{Evan H. Anders}
 \affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
@@ -41,11 +41,42 @@
 \begin{abstract}
 An abstract will go here eventually
 \end{abstract}
-\maketitle
 
 
 \section{Introduction}
 \label{sec:intro}
+People who study the Sun don't understand what convective velocities are doing.
+They're either way smaller than simulations and mixing length theory predict
+\citep{hanasoge&all2012}, or they are roughly aligned with what we would
+expect \citep{greer&all2015L}.  Understanding how convection is driven in
+stellar interiors is important in constructing proper models of stellar evolution
+and structure.  Thus, this convective conundrum must be figured out.
+
+Recently, \cite{brandenburg2016} extended stellar mixing length theory to include
+an additional flux term which does not depend on the local entropy gradient but
+rather parameterizes the nonlocal flux carrying of convective downdrafts.  This
+Deardorff flux, if sufficiently strong, could be the bulk carrier of convective
+flux through an adiabatic lower convection zone, and then large ``giant cells'' won't be
+driven there \cite{lord&all2014}.  Recently, \cite{kapyla&all2017} studied penetrative
+convection in simulations with realistic opacities.  In these simulations, they reported
+``Deardorff zones,'' or portions of the convective domain in which enthalpy flux points
+upwards but the entropy gradient is positively and is nominally stable to convection.
+They show that, for a specific simulation, classical penetrative convection,
+such as that studied by \cite{hurlburt&all1986}, does not physically capture the
+same mechanisms.  They conclude that a realistic, Kramers-like opacity
+is required to study Deardorff zones.
+
+Studies of internally heated boussinesq convection show that for the proper
+boundary conditions, stable layers can be achieved \citep{goluskin&vanderpoel2016}.
+Here we show that, using simple principles studies in well-understood Boussinesq
+convection, stable layers are simple to achieve in internally heated atmospheres
+with a simple (constant) opacity profile.  In these atmospheres, we see a reduction
+of power at the surface of the atmosphere due to the stably stratified
+Deardorff zone in the lower convective domain.  Deardorff zones naturally arise
+in these systems, and the extent of the Deardorff zone can be understood from
+the initial conditions of the atmosphere.
+
+
 \begin{enumerate}
 \item Importance of internal heating in natural convective systems
 \item Shape of internal heating in something like Sun

@@ -329,8 +329,34 @@ class Atmosphere:
 
 class ConstHeating(Atmosphere):
     '''
-    A reference atmosphere which is characterized by being in thermal and hydrostatic equilibrium
-    for an atmosphere with a constant internal heating term in the energy equation
+    A reference atmosphere in which to study some interesting systems in stratified
+    convection.  These atmospheres are in thermal equilibrium with a constant
+    internal heating term and constant kappa.  This sets the profile of temperature.
+    Density is backed out from hydrostatic equilibrium.  There are three characteristic
+    parameters of these atmospheres:
+    
+    (1) n_rho_cz -- the number of density scale heights spanned by the portion of
+                      the atmosphere carrying a superadiabatic amount of flux.
+    (2) r        -- the depth of the radiative zone, in units of the convective
+                      zone depth, below the convective zone.
+    (3) epsilon  -- As in polytropes, this sets the value of gravity and determines
+                      the mach number of the flows.  For small eps, Ma propto eps^{1/2}
+
+    Class parameters:
+        atmosphere_name     - A string containing the name of the atmosphere
+        aspect_ratio        - The atmospheric aspect ratio, Lx/Lz
+        n_rho_cz            - As defined above
+        r                   - As defined above
+        epsilon             - As defined above
+        d_conv              - The vertical extent of the convective zone
+        z_cross             - The z-coordinate at the boundary between RZ/CZ
+        H                   - The magnitude of internal heating
+        Lx, Ly, Lz          - Physical length of atmosphere in corresponding dimension
+        gamma, Cp, Cv       - Thermodynamic quantities of ideal gas
+        m_ad                - The adiabatic polytropic index, 1/(gamma-1)
+        g                   - The value of gravitational acceleration
+        Rayleigh            - The Rayleigh number at the first moment of TgradS
+        Prandtl             - The Prandtl number at same location as Ra
     '''
     def __init__(self,
                  nx=256,
