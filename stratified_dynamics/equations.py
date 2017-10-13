@@ -208,6 +208,8 @@ class FC_equations(Equations):
         self.problem.parameters['IH_flux'] = self.IH_flux
 
         self.problem.parameters['Lsm1'] = self.Lsm1
+        self.problem.parameters['cz_mask'] = self.cz_mask
+        self.problem.parameters['d_conv'] = self.d_conv
 
         # Thermo subs that are used later, but before set_subs() is called; okay or not okay?
         self.problem.parameters['delta_s_atm'] = self.delta_s
@@ -569,9 +571,9 @@ class FC_equations(Equations):
         analysis_scalar.add_task("vol_avg(interp(Ma_ad_rms,  z={}))".format(self.Lsm1), name="Ma_ad_Lsm1")
         analysis_scalar.add_task("vol_avg(interp(Re_rms,     z={}))".format(self.Lsm1), name="Re_Lsm1")
 
-#        analysis_scalar.add_task("cz_vol_avg((Ma_ad_rms))", name="cz_Ma_ad")
-#        analysis_scalar.add_task("cz_vol_avg((Re_rms))", name="cz_Re_rms")
-#        analysis_scalar.add_task("cz_vol_avg((z + 1))", name="cz_test")
+        analysis_scalar.add_task("cz_vol_avg((Ma_ad_rms))", name="cz_Ma_ad")
+        analysis_scalar.add_task("cz_vol_avg((Re_rms))", name="cz_Re_rms")
+        analysis_scalar.add_task("cz_vol_avg((z + 1))", name="cz_test")
             
         analysis_tasks['scalar'] = analysis_scalar
 
@@ -609,7 +611,7 @@ class FC_equations_2d(FC_equations):
         else:
             self.problem.substitutions['plane_avg(A)'] = 'integ(A, "x")/Lx'
             self.problem.substitutions['vol_avg(A)']   = 'integ(A)/Lx/Lz'
-#            self.problem.substitutions['cz_vol_avg(A)'] = "vol_avg(part_integ(A,  'z', [{},], [{},]))".format(self.z_cross, self.Lz)
+            self.problem.substitutions['cz_vol_avg(A)'] = 'integ(cz_mask*A)/Lx/d_conv'
 
         self._set_operators()
         self._set_diffusion_subs()

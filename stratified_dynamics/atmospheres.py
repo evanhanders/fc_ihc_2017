@@ -364,6 +364,11 @@ class ConstHeating(Atmosphere):
         else:
             self.constant_diffusivities = False
 
+        
+        self.cz_mask = self._new_ncc()
+        from scipy.special import erf
+        self.cz_mask['g'] = 0.5 * (erf(100*(self.z - self.z_cross)) + 1)
+
         self._set_atmosphere()
         self._set_timescales()
 
