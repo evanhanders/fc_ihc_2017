@@ -598,10 +598,10 @@ class ConstHeating(Atmosphere):
         self.nu_r.set_scales(1, keep_data=True)
 
         # determine characteristic timescales; use chi and nu at middle of domain for bulk timescales.
-        self.thermal_time = self.d_conv**2/(self.chi.interpolate(z=0)['g'][0])
+        self.thermal_time = self.Lz**2/(self.chi.interpolate(z=0)['g'][0])
         self.top_thermal_time = 1/chi_top
 
-        self.viscous_time = self.d_conv**2/(self.nu.interpolate(z=0)['g'][0])
+        self.viscous_time = self.Lz**2/(self.nu.interpolate(z=0)['g'][0])
         self.top_viscous_time = 1/nu_top
 
         if self.dimensions == 2:
@@ -685,7 +685,6 @@ class ConstHeating(Atmosphere):
             f['nz']             = self.nz
             f['r']             = self.r
             f['z_cross']       = self.z_cross
-            f['d_conv']        = self.z_cross
             f['H']             = self.H
             f['m_ad']           = self.m_ad
             f['epsilon']        = self.epsilon

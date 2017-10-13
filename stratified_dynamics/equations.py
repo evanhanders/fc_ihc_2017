@@ -322,6 +322,8 @@ class FC_equations(Equations):
         self.problem.substitutions['epsilon_0'] = 'log(T0**(1/(gamma-1))/rho0)/log(T0)'
         self.problem.substitutions['epsilon'] = 'log(T_full**(1/(gamma-1))/rho_full)/log(T_full)'
         
+        self.problem.substitutions['poly_m_eff'] = 'log(rho_full)/log(T_full)'
+        
         self.problem.substitutions['vel_rms'] = 'sqrt(u**2 + v**2 + w**2)'
         self.problem.substitutions['KE'] = 'rho_full*(vel_rms**2)/2'
         self.problem.substitutions['PE'] = 'rho_full*phi'
@@ -541,6 +543,7 @@ class FC_equations(Equations):
         analysis_profile.add_task("plane_avg(g*dz(s_fluc)*Cp_inv)", name="brunt_squared_fluc")        
         analysis_profile.add_task("plane_avg(g*dz(s_mean)*Cp_inv)", name="brunt_squared_mean")        
         analysis_profile.add_task("plane_avg(g*dz(s_fluc + s_mean)*Cp_inv)", name="brunt_squared_tot")
+        analysis_profile.add_task("plane_avg(poly_m_eff)", name="poly_m_eff")
 
         analysis_tasks['profile'] = analysis_profile
 
@@ -573,7 +576,7 @@ class FC_equations(Equations):
 
         analysis_scalar.add_task("cz_vol_avg((Ma_ad_rms))", name="cz_Ma_ad")
         analysis_scalar.add_task("cz_vol_avg((Re_rms))", name="cz_Re_rms")
-        analysis_scalar.add_task("cz_vol_avg((z + 1))", name="cz_test")
+        analysis_scalar.add_task("cz_vol_avg((Nusselt_AB17))", name="cz_Nu_AB17")
             
         analysis_tasks['scalar'] = analysis_scalar
 
