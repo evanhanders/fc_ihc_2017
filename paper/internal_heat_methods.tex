@@ -1,4 +1,4 @@
-\documentclass[twocolumn]{aastex61}
+\documentclass[titlepage, twocolumn, fontsize=10]{aastex6}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -13,8 +13,6 @@
 }
 \usepackage{bm}
 \usepackage{natbib}
-\usepackage{longtable}
-\LTcapwidth=0.87\textwidth
 
 \newcommand{\Div}[1]{\ensuremath{\nabla\cdot\left( #1\right)}}
 \newcommand{\angles}[1]{\ensuremath{\left\langle #1 \right\rangle}}
@@ -30,17 +28,21 @@
 \newcommand{\appropto}{\mathpalette\approptoinn\relax}
 
 \begin{document}
+\title{Internally heated, stratified, compressible convection}
+
 \author{Evan H. Anders}
 \affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
 \affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
 \author{Benjamin P. Brown}
 \affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
 \affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
-\title{Internally heated, stratified, compressible convection}
+\author{Others (Mark, etc.?)}
 
 \begin{abstract}
 An abstract will go here eventually
 \end{abstract}
+
+\keywords{convection --- hydrodynamics --- stellar interiors --- methods: numerical}
 
 
 \section{Introduction}
@@ -48,7 +50,10 @@ An abstract will go here eventually
 People who study the Sun don't understand what convective velocities are doing.
 They're either way smaller than simulations and mixing length theory predict
 \citep{hanasoge&all2012}, or they are roughly aligned with what we would
-expect \citep{greer&all2015L}.  Understanding how convection is driven in
+expect \citep{greer&all2015L}.  Power spectra at the solar surface show clear signals at
+granular and supergranular scales, but other predicted length scales, most notably
+giant cells, are missing from the surface power spectrum \citep{hathaway&all2015}.
+Understanding how convection is driven in
 stellar interiors is important in constructing proper models of stellar evolution
 and structure.  Thus, this convective conundrum must be figured out.
 
@@ -76,19 +81,6 @@ Deardorff zone in the lower convective domain.  Deardorff zones naturally arise
 in these systems, and the extent of the Deardorff zone can be understood from
 the initial conditions of the atmosphere.
 
-
-\begin{enumerate}
-\item Importance of internal heating in natural convective systems
-\item Shape of internal heating in something like Sun
-\item Studies in Rayleigh-Benard
-\item Goals of this paper:
-\begin{enumerate}
-\item Show how to set up internally heated polytropes, with stable layers (or without)
-\item Show how the resultant stratification depends on combo of lower flux + internal heating profile choices
-\item Show how stable layer affects surface power spectrum
-\end{enumerate}
-\end{enumerate}
-
 \section{Experiment} 
 We study direct numerical simulations of an ideal gas whose equation of
 state is $P = \rho T$ and whose adiabatic index is $\gamma = 5/3$
@@ -108,7 +100,7 @@ by evolving the fully compressible Navier-Stokes equations,
 &\begin{aligned}
 \frac{\partial T}{\partial t} + \bm{u}\cdot\grad T
 + (\gamma-1)T\grad\cdot\bm{u} + \frac{1}{\rho c_V}
-\grad\cdot\left(-\kappa\grad T\right) = - (\stressT\cdot\grad)\cdot\bm{u} + \kappa H,
+\grad\cdot\left(-\kappa\grad T\right) = \\- (\stressT\cdot\grad)\cdot\bm{u} + \kappa H,
 	\label{eqn:energy_eqn}
 \end{aligned}
 \end{align}
@@ -129,8 +121,10 @@ where $\epsilon$ is a control parameter which sets the superadiabaticity and is 
 the superadiabatic excess in polytropic atmospheres \cite{anders&brown2017, graham1975}.
 An atmosphere which satisfies these initial conditions takes the form
 \begin{equation}
-T_0(z) = -\frac{H}{2} z^2 + (H L_z - 1) z + \left(1 - \frac{H}{2}L_z^2 + L_z\right),
-\qquad P_0(z) = \left(\frac{\xi + \grad T_0}{\xi - \grad T_0} \cdot\frac{\xi + 1}{\xi - 1}\right)^{g/\xi},
+\begin{split}
+T_0(z) &= -\frac{H}{2} z^2 + (H L_z - 1) z + \left(1 - \frac{H}{2}L_z^2 + L_z\right), \\
+P_0(z) &= \left(\frac{\xi + \grad T_0}{\xi - \grad T_0} \cdot\frac{\xi + 1}{\xi - 1}\right)^{g/\xi},
+\end{split}
 \end{equation}
 where $L_z$ is the depth of the atmosphere, $\xi \equiv \sqrt{1 + 2H}$, 
 $\grad T_0 = \partial_z T_0(z) = -H z + (H_Lz - 1)$,
@@ -165,9 +159,11 @@ Diffusivities in the system are specified by choosing a value of the Rayleigh
 Number and Prandtl number.  The thermal diffusivity, $\chi = \kappa / \rho$ and
 viscous diffusivity, $\nu = \mu / \rho$ are constrained by
 \begin{equation}
-\text{Ra}(z) = \frac{g d_{\text{conv}}^4 \bigg|\grad s / c_P\bigg|}{\nu\chi} = 
-\frac{g d_{\text{conv}}^4}{\kappa\mu}\bigg|\frac{\grad s}{c_P}(z)\bigg|\rho_0^2(z),\qquad
-\text{Pr} = \frac{\nu}{\chi},
+\begin{split}
+\text{Ra}(z) &= \frac{g d_{\text{conv}}^4 \bigg|\grad s / c_P\bigg|}{\nu\chi} = 
+\frac{g d_{\text{conv}}^4}{\kappa\mu}\bigg|\frac{\grad s}{c_P}(z)\bigg|\rho_0^2(z),\\
+\text{Pr} &= \frac{\nu}{\chi},
+\end{split}
 \end{equation}
 where 
 \begin{equation}
