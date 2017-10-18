@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 
 from dedalus import public as de
 from stratified_dynamics.const_heat import FC_ConstHeating_2d_kappa_mu
+from mpi4py import MPI
 
 import logging
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ def solve_BVP(T1_in, ln_rho1_in, w_in, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2,
 
     atmosphere = FC_ConstHeating_2d_kappa_mu(nz=nz, constant_kappa=True, constant_mu=True, 
                                              epsilon=epsilon, gamma=5./3, n_rho_cz=n_rho,
-                                             r=r, dimensions=1)
+                                             r=r, dimensions=1, comm=MPI.COMM_SELF)
     atmosphere.problem = de.NLBVP(atmosphere.domain, variables=['T1', 'w', 'T1_z', 'w_z'])#, 'M1'])
     atmosphere.problem.substitutions['u'] = '0'
     atmosphere.problem.substitutions['ln_rho1'] = '0'

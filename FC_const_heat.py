@@ -58,10 +58,13 @@ Options:
     --no_join                            If flagged, skip join operation at end of run.
 
     --verbose                            Do extra output (Peclet and Nusselt numbers) to screen
+
+    --do_bvp                             If flagged, do BVPs every 100 tbuoy when Re > 1 to converge faster
 """
 import logging
 
 import numpy as np
+from bvps import IH_const_heat_bvp
 
 def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  Taylor=None, theta=0,
@@ -75,7 +78,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
-                 verbose=False):
+                 verbose=False, do_bvp=False):
 
     import dedalus.public as de
     from dedalus.tools  import post
@@ -211,9 +214,25 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     if verbose:
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
+    if do_bvp:
+        flow.add_property("plane_avg(T1)", name='T1_avg')
+        flow.add_property("plane_avg(T1_z)", name='T1_z_avg')
+        flow.add_property("plane_avg(ln_rho1)", name='ln_rho1_avg')
+        flow.add_property("plane_avg(w)", name='w_avg')
+        flow.add_property("plane_avg(w_z)", name='w_z_avg')
+        T1 = np.zeros(nz)
+        ln_rho1 = np.zeros(nz)
+        w = np.zeros(nz)
+        avg_count = 0
+        start_sim_time = None
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
+
+    T1_solv = solver.state['T1']
+    T1_z_solv = solver.state['T1_z']
+    w_solv = solver.state['w']
+    w_z_solv = solver.state['w_z']
 
     try:
         start_time = time.time()
@@ -231,6 +250,29 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
             if threeD and effective_iter % Hermitian_cadence == 0:
                 for field in solver.state.fields:
                     field.require_grid_space()
+
+            if flow.grid_average('Re') > 1 and do_bvp:
+                avg_count += 1
+                T1 += flow.properties['T1_avg']['g']
+                ln_rho1 += flow.properties['ln_rho1_avg']['g']
+                w += flow.properties['w_avg']['g']
+                if isinstance(start_sim_time, type(None)):
+                    start_sim_time = solver.sim_time
+
+            if do_bvp and (solver.sim_time - start_sim_time)/atmosphere.buoyancy_time > 100:
+                bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w_in/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
+                T1_solv.set_scales(1, keep_data=True)
+                T1_solv['g'] += (bT - flow.properties['T1_avg']['g'])
+                T1_z_solv.set_scales(1, keep_data=True)
+                T1_z_solv['g'] += (bTz - flow.properties['T1_z_avg']['g'])
+                w_solv.set_scales(1, keep_data=True)
+                w_solv['g'] += (bw - flow.properties['w_avg']['g'])
+                w_z_solv.set_scales(1, keep_data=True)
+                w_z_solv['g'] += (bwz - flow.properties['w_z_avg']['g'])
+                T1 = np.zeros(nz)
+                ln_rho1 = np.zeros_like(T1)
+                w = np.zeros_like(T1)
+                
 
             # update lists
             if effective_iter % report_cadence == 0:
@@ -502,4 +544,5 @@ if __name__ == "__main__":
                  no_volumes=args['--no_volumes'],
                  no_join=args['--no_join'],
                  split_diffusivities=args['--split_diffusivities'],
-                 verbose=args['--verbose'])
+                 verbose=args['--verbose'],
+                 do_bvp=args['--do_bvp'])
