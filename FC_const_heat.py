@@ -59,7 +59,8 @@ Options:
 
     --verbose                            Do extra output (Peclet and Nusselt numbers) to screen
 
-    --do_bvp                             If flagged, do BVPs every 100 tbuoy when Re > 1 to converge faster
+    --do_bvp                             If flagged, do BVPs at regular intervals when Re > 1 to converge faster
+    --bvp_time=<time>                    How often to do a bvp, in tbuoy [default: 50]
 """
 import logging
 
@@ -78,7 +79,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
-                 verbose=False, do_bvp=False):
+                 verbose=False, do_bvp=False, bvp_time=50):
 
     import dedalus.public as de
     from dedalus.tools  import post
@@ -224,7 +225,8 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         ln_rho1 = np.zeros(nz)
         w = np.zeros(nz)
         avg_count = 0
-        start_sim_time = None
+        avg_started = False
+        start_avg_time = 0
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
@@ -251,15 +253,16 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 for field in solver.state.fields:
                     field.require_grid_space()
 
-            if flow.grid_average('Re') > 1e-7 and do_bvp:
+            if flow.grid_average('Re') > 1 and do_bvp:
                 avg_count += 1
                 T1 += flow.properties['T1_avg']['g'][0,:]
                 ln_rho1 += flow.properties['ln_rho1_avg']['g'][0,:]
                 w += flow.properties['w_avg']['g'][0,:]
-                if isinstance(start_sim_time, type(None)):
+                if not avg_started:
                     start_avg_time = solver.sim_time
+                    avg_started=True
 
-            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > 2:
+            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time:
                 bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
                 T1_solv.set_scales(1, keep_data=True)
                 T1_solv['g'] += (bT - flow.properties['T1_avg']['g'])
@@ -547,4 +550,5 @@ if __name__ == "__main__":
                  no_join=args['--no_join'],
                  split_diffusivities=args['--split_diffusivities'],
                  verbose=args['--verbose'],
-                 do_bvp=args['--do_bvp'])
+                 do_bvp=args['--do_bvp'],
+                 bvp_time=float(args['--bvp_time']))
