@@ -358,13 +358,12 @@ class FC_equations(Equations):
         self.problem.substitutions['kappa_reference_flux_z_G75'] = '(-chi*rho0*(right(T1+T0)-left(T1+T0))/Lz)'
         self.problem.substitutions['Nusselt_norm_G75']   = '(kappa_reference_flux_z_G75 - kappa_adiabatic_flux_z_G75)'
         self.problem.substitutions['Nusselt_norm_AB17']   = 'vol_avg(kappa_flux_z - kappa_adiabatic_flux_z_AB17)'
+        self.problem.substitutions['z_weight_Nusselt_norm_AB17']   = 'vol_avg(kappa_flux_z - kappa_adiabatic_flux_z_AB17)'
         self.problem.substitutions['all_flux_minus_adiabatic_G75'] = '(convective_flux_z+kappa_flux_z-kappa_adiabatic_flux_z_G75)'
         self.problem.substitutions['all_flux_minus_adiabatic_AB17'] = '(convective_flux_z+kappa_flux_z-kappa_adiabatic_flux_z_AB17)'
         self.problem.substitutions['Nusselt_G75'] = '((all_flux_minus_adiabatic_G75)/(Nusselt_norm_G75))'
         self.problem.substitutions['Nusselt_AB17'] = '((all_flux_minus_adiabatic_AB17)/(Nusselt_norm_AB17))'
-
-
-
+        self.problem.substitutions['z_weight_Nusselt_AB17'] = '((z*all_flux_minus_adiabatic_AB17)/(z_weight_Nusselt_norm_AB17))'
         
     def set_BC(self,
                fixed_flux=None, fixed_temperature=None, mixed_flux_temperature=None, mixed_temperature_flux=None,
@@ -594,6 +593,7 @@ class FC_equations(Equations):
         analysis_scalar.add_task("cz_vol_avg((Ma_ad_rms))", name="cz_Ma_ad")
         analysis_scalar.add_task("cz_vol_avg((Re_rms))", name="cz_Re_rms")
         analysis_scalar.add_task("cz_vol_avg((Nusselt_AB17))", name="cz_Nu_AB17")
+        analysis_scalar.add_task("cz_vol_avg((z_weight_Nusselt_AB17))", name="cz_z_Nu_AB17")
             
         analysis_tasks['scalar'] = analysis_scalar
 
@@ -659,7 +659,6 @@ class FC_equations_2d(FC_equations):
         self.problem.add_equation("dz(u) - u_z = 0")
         self.problem.add_equation("dz(w) - w_z = 0")
         self.problem.add_equation("dz(T1) - T1_z = 0")
-
             
         logger.debug("Setting z-momentum equation")
         self.problem.add_equation(("(scale_momentum)*( dt(w) + T1_z     + T0*dz(ln_rho1) + T1*del_ln_rho0 - L_visc_w) = "
@@ -694,6 +693,8 @@ class FC_equations_2d(FC_equations):
         analysis_slice.add_task("s_fluc - plane_avg(s_fluc)", name="s'")
         analysis_slice.add_task("u", name="u")
         analysis_slice.add_task("w", name="w")
+        analysis_slice.add_task("T1", name="T1")
+        analysis_slice.add_task("ln_rho1", name="ln_rho1")
         analysis_slice.add_task("enstrophy", name="enstrophy")
         analysis_slice.add_task("ω_y", name="vorticity")
         analysis_tasks['slice'] = analysis_slice
