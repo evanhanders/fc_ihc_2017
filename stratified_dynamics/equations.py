@@ -362,6 +362,9 @@ class FC_equations(Equations):
         self.problem.substitutions['all_flux_minus_adiabatic_AB17'] = '(convective_flux_z+kappa_flux_z-kappa_adiabatic_flux_z_AB17)'
         self.problem.substitutions['Nusselt_G75'] = '((all_flux_minus_adiabatic_G75)/(Nusselt_norm_G75))'
         self.problem.substitutions['Nusselt_AB17'] = '((all_flux_minus_adiabatic_AB17)/(Nusselt_norm_AB17))'
+
+
+
         
     def set_BC(self,
                fixed_flux=None, fixed_temperature=None, mixed_flux_temperature=None, mixed_temperature_flux=None,
@@ -494,11 +497,25 @@ class FC_equations(Equations):
 
         analysis_profile = solver.evaluator.add_file_handler(data_dir+"profiles", max_writes=max_writes, parallel=False,
                                                              mode=mode, **kwargs)
+
+
+        analysis_profile.add_task("plane_avg(NL_z_momentum)", name="NL_z_momentum")
+        analysis_profile.add_task("plane_avg(NL_continuity)", name="NL_continuity")
+        analysis_profile.add_task("plane_avg(NL_energy)", name="NL_energy")
         analysis_profile.add_task("plane_avg(T1)", name="T1")
+        analysis_profile.add_task("plane_avg(ln_rho1)", name="ln_rho1")
+        analysis_profile.add_task("plane_avg(w)", name="w")
+        analysis_profile.add_task("plane_avg(u)", name="u")
+        analysis_profile.add_task("plane_avg(dx(u))", name="dx_u")
+        analysis_profile.add_task("plane_avg(dx(w))", name="dx_w")
+        analysis_profile.add_task("plane_avg(dx(dx(u)))", name="dx2_u")
+        analysis_profile.add_task("plane_avg(dx(dx(w)))", name="dx2_w")
+        analysis_profile.add_task("plane_avg(dx(u_z))", name="dx_u_z")
+        analysis_profile.add_task("plane_avg(dx(w_z))", name="dx_w_z")
+
         analysis_profile.add_task("plane_avg(T_full)", name="T_full")
         analysis_profile.add_task("plane_avg(Ma_iso_rms)", name="Ma_iso")
         analysis_profile.add_task("plane_avg(Ma_ad_rms)", name="Ma_ad")
-        analysis_profile.add_task("plane_avg(ln_rho1)", name="ln_rho1")
         analysis_profile.add_task("plane_avg(rho_full)", name="rho_full")
         analysis_profile.add_task("plane_avg(KE)", name="KE")
         analysis_profile.add_task("plane_avg(PE)", name="PE")
@@ -642,6 +659,7 @@ class FC_equations_2d(FC_equations):
         self.problem.add_equation("dz(u) - u_z = 0")
         self.problem.add_equation("dz(w) - w_z = 0")
         self.problem.add_equation("dz(T1) - T1_z = 0")
+
             
         logger.debug("Setting z-momentum equation")
         self.problem.add_equation(("(scale_momentum)*( dt(w) + T1_z     + T0*dz(ln_rho1) + T1*del_ln_rho0 - L_visc_w) = "
@@ -659,7 +677,11 @@ class FC_equations_2d(FC_equations):
         logger.debug("Setting energy equation")
         self.problem.add_equation(("(scale_energy)*( dt(T1)   + w*T0_z  + (gamma-1)*T0*Div_u -  L_thermal) = "
                                    "(scale_energy)*(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)")) 
-                            
+
+        self.problem.substitutions['NL_z_momentum'] = "(-UdotGrad(w, w_z) - T1*dz(ln_rho1) + R_visc_w)"
+        self.problem.substitutions['NL_continuity'] = "(-UdotGrad(ln_rho1, dz(ln_rho1)))"
+        self.problem.substitutions['NL_energy']     = "(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)"
+
 
     def initialize_output(self, solver, data_dir, coeffs_output=False,
                           max_writes=20, mode="overwrite", **kwargs):
