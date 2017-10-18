@@ -42,11 +42,6 @@ logger = logging.getLogger(__name__)
 
 import h5py
 
-with h5py.File('bvps/profile_info.h5', 'r') as f:
-    T1_file = f['T1'].value[0,:]
-    ln_rho1_file = f['ln_rho1'].value[0,:]
-    w_file = f['w'].value[0,:]
-
 
 Ra = 460
 Pr = 1
@@ -175,4 +170,13 @@ def solve_BVP(T1_in, ln_rho1_in, w_in, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2,
 #    plt.show()
 
 if __name__ == '__main__':
-    solve_BVP(T1_file, ln_rho1_file, w1_file)
+    try:
+        with h5py.File('bvps/profile_info.h5', 'r') as f:
+            T1_file = f['T1'].value[0,:]
+            ln_rho1_file = f['ln_rho1'].value[0,:]
+            w_file = f['w'].value[0,:]
+
+
+        solve_BVP(T1_file, ln_rho1_file, w1_file)
+    except:
+        print('oops')

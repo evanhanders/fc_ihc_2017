@@ -507,10 +507,13 @@ class FC_equations(Equations):
         analysis_profile.add_task("plane_avg(u)", name="u")
         analysis_profile.add_task("plane_avg(dx(u))", name="dx_u")
         analysis_profile.add_task("plane_avg(dx(w))", name="dx_w")
+        analysis_profile.add_task("plane_avg(dx(T1))", name="dx_T1")
         analysis_profile.add_task("plane_avg(dx(dx(u)))", name="dx2_u")
         analysis_profile.add_task("plane_avg(dx(dx(w)))", name="dx2_w")
+        analysis_profile.add_task("plane_avg(dx(dx(T1)))", name="dx2_T1")
         analysis_profile.add_task("plane_avg(dx(u_z))", name="dx_u_z")
         analysis_profile.add_task("plane_avg(dx(w_z))", name="dx_w_z")
+        analysis_profile.add_task("plane_avg(dx(T1_z))", name="dx_T1_z")
 
         analysis_profile.add_task("plane_avg(T_full)", name="T_full")
         analysis_profile.add_task("plane_avg(Ma_iso_rms)", name="Ma_iso")

@@ -66,6 +66,17 @@ import logging
 
 import numpy as np
 from bvps import IH_const_heat_bvp
+from mpi4py import MPI
+
+def get_full_profile(profile, nz, comm, rank, size):
+    prof_loc = np.zeros(nz)
+    prof_glob = np.zeros(nz)
+    n_per = nz/size
+    prof_loc[n_per*rank:n_per*(rank+1)] = profile
+    comm.Allreduce(prof_loc, prof_glob, op=MPI.SUM)
+    return prof_glob
+
+
 
 def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  Taylor=None, theta=0,
@@ -236,6 +247,11 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     w_solv = solver.state['w']
     w_z_solv = solver.state['w_z']
 
+    comm = atmosphere.domain.dist.comm_cart
+    rank = comm.rank
+    size = comm.size
+    n_per = nz/size
+
     try:
         start_time = time.time()
         start_iter = solver.iteration
@@ -255,23 +271,22 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
 
             if flow.grid_average('Re') > 1 and do_bvp:
                 avg_count += 1
-                T1 += flow.properties['T1_avg']['g'][0,:]
-                ln_rho1 += flow.properties['ln_rho1_avg']['g'][0,:]
-                w += flow.properties['w_avg']['g'][0,:]
+                T1 += get_full_profile(flow.properties['T1_avg']['g'][0,:], nz, comm, rank, size)
+                ln_rho1 += get_full_profile(flow.properties['ln_rho1_avg']['g'][0,:], nz, comm, rank, size)
+                w += get_full_profile(flow.properties['w_avg']['g'][0,:], nz, comm, rank, size)
                 if not avg_started:
                     start_avg_time = solver.sim_time
                     avg_started=True
-
-            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time:
+            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time and avg_started:
                 bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
                 T1_solv.set_scales(1, keep_data=True)
-                T1_solv['g'] += (bT - flow.properties['T1_avg']['g'])
+                T1_solv['g'] += (bT[rank*n_per:(rank+1)*n_per] - flow.properties['T1_avg']['g'])
                 T1_z_solv.set_scales(1, keep_data=True)
-                T1_z_solv['g'] += (bTz - flow.properties['T1_z_avg']['g'])
+                T1_z_solv['g'] += (bTz[rank*n_per:(rank+1)*n_per] - flow.properties['T1_z_avg']['g'])
                 w_solv.set_scales(1, keep_data=True)
-                w_solv['g'] += (bw - flow.properties['w_avg']['g'])
+                w_solv['g'] += (bw[rank*n_per:(rank+1)*n_per] - flow.properties['w_avg']['g'])
                 w_z_solv.set_scales(1, keep_data=True)
-                w_z_solv['g'] += (bwz - flow.properties['w_z_avg']['g'])
+                w_z_solv['g'] += (bwz[rank*n_per:(rank+1)*n_per] - flow.properties['w_z_avg']['g'])
                 T1 = np.zeros(nz)
                 ln_rho1 = np.zeros_like(T1)
                 w = np.zeros_like(T1)
