@@ -251,16 +251,16 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 for field in solver.state.fields:
                     field.require_grid_space()
 
-            if flow.grid_average('Re') > 1 and do_bvp:
+            if flow.grid_average('Re') > 1e-7 and do_bvp:
                 avg_count += 1
-                T1 += flow.properties['T1_avg']['g']
-                ln_rho1 += flow.properties['ln_rho1_avg']['g']
-                w += flow.properties['w_avg']['g']
+                T1 += flow.properties['T1_avg']['g'][0,:]
+                ln_rho1 += flow.properties['ln_rho1_avg']['g'][0,:]
+                w += flow.properties['w_avg']['g'][0,:]
                 if isinstance(start_sim_time, type(None)):
-                    start_sim_time = solver.sim_time
+                    start_avg_time = solver.sim_time
 
-            if do_bvp and (solver.sim_time - start_sim_time)/atmosphere.buoyancy_time > 100:
-                bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w_in/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
+            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > 2:
+                bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
                 T1_solv.set_scales(1, keep_data=True)
                 T1_solv['g'] += (bT - flow.properties['T1_avg']['g'])
                 T1_z_solv.set_scales(1, keep_data=True)
@@ -272,6 +272,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 T1 = np.zeros(nz)
                 ln_rho1 = np.zeros_like(T1)
                 w = np.zeros_like(T1)
+                start_avg_time = solver.sim_time
                 
 
             # update lists
@@ -315,6 +316,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 first_step = False
                 start_time = time.time()
     except:
+        raise
         logger.error('Exception raised, triggering end of main loop.')
     finally:
         end_time = time.time()
