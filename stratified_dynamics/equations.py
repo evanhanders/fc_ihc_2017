@@ -635,6 +635,10 @@ class FC_equations_2d(FC_equations):
 
         self._set_operators()
         self._set_diffusion_subs()
+
+        self.problem.substitutions['NL_z_momentum'] = "(-UdotGrad(w, w_z) - T1*dz(ln_rho1) + R_visc_w)"
+        self.problem.substitutions['NL_continuity'] = "(-UdotGrad(ln_rho1, dz(ln_rho1)))"
+        self.problem.substitutions['NL_energy']     = "(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)"
         super(FC_equations_2d, self)._set_subs()
         
     def set_equations(self, Rayleigh, Prandtl,
@@ -677,9 +681,6 @@ class FC_equations_2d(FC_equations):
         self.problem.add_equation(("(scale_energy)*( dt(T1)   + w*T0_z  + (gamma-1)*T0*Div_u -  L_thermal) = "
                                    "(scale_energy)*(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)")) 
 
-        self.problem.substitutions['NL_z_momentum'] = "(-UdotGrad(w, w_z) - T1*dz(ln_rho1) + R_visc_w)"
-        self.problem.substitutions['NL_continuity'] = "(-UdotGrad(ln_rho1, dz(ln_rho1)))"
-        self.problem.substitutions['NL_energy']     = "(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)"
 
 
     def initialize_output(self, solver, data_dir, coeffs_output=False,
