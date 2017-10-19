@@ -227,7 +227,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z']
+        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z', 'L_visc_w', 'R_visc_w', 'UdotGrad(w, w_z)', 'vel_rms']
         profiles_dict = dict()
         for fd in fields_to_track:
             flow.add_property("plane_avg({})".format(fd), name='{}_avg'.format(fd))
