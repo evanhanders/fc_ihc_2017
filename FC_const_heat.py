@@ -227,30 +227,27 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        flow.add_property("plane_avg(T1)", name='T1_avg')
-        flow.add_property("plane_avg(T1_z)", name='T1_z_avg')
-        flow.add_property("plane_avg(ln_rho1)", name='ln_rho1_avg')
-        flow.add_property("plane_avg(w)", name='w_avg')
-        flow.add_property("plane_avg(w_z)", name='w_z_avg')
-        T1 = np.zeros(nz)
-        ln_rho1 = np.zeros(nz)
-        w = np.zeros(nz)
+        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z']
+        profiles_dict = dict()
+        for fd in fields_to_track:
+            flow.add_property("plane_avg({})".format(fd), name='{}_avg'.format(fd))
+            profiles_dict[fd] = np.zeros(nz)
         avg_count = 0
         avg_started = False
         start_avg_time = 0
+        comm = atmosphere.domain.dist.comm_cart
+        rank = comm.rank
+        size = comm.size
+        n_per = nz/size
+        solver_states = ['T1', 'T1_z', 'w', 'w_z', 'ln_rho1']
+        solver_states_dict = dict()
+        for st in solver_states:
+            solver_states_dict[st] = solver.state[st]
+            
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
 
-    T1_solv = solver.state['T1']
-    T1_z_solv = solver.state['T1_z']
-    w_solv = solver.state['w']
-    w_z_solv = solver.state['w_z']
-
-    comm = atmosphere.domain.dist.comm_cart
-    rank = comm.rank
-    size = comm.size
-    n_per = nz/size
 
     try:
         start_time = time.time()
@@ -269,27 +266,21 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 for field in solver.state.fields:
                     field.require_grid_space()
 
-            if flow.grid_average('Re') > 1 and do_bvp:
+            if flow.grid_average('Re') > 1e-7 and do_bvp:
                 avg_count += 1
-                T1 += get_full_profile(flow.properties['T1_avg']['g'][0,:], nz, comm, rank, size)
-                ln_rho1 += get_full_profile(flow.properties['ln_rho1_avg']['g'][0,:], nz, comm, rank, size)
-                w += get_full_profile(flow.properties['w_avg']['g'][0,:], nz, comm, rank, size)
+                for fd in fields_to_track:
+                    profiles_dict[fd] += get_full_profile(flow.properties['{}_avg'.format(fd)]['g'][0,:], nz, comm, rank, size)
                 if not avg_started:
                     start_avg_time = solver.sim_time
                     avg_started=True
             if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time and avg_started:
-                bT, bw, bTz, bwz = IH_const_heat_bvp.solve_BVP(T1/avg_count, ln_rho1/avg_count, w/avg_count, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
-                T1_solv.set_scales(1, keep_data=True)
-                T1_solv['g'] += (bT[rank*n_per:(rank+1)*n_per] - flow.properties['T1_avg']['g'])
-                T1_z_solv.set_scales(1, keep_data=True)
-                T1_z_solv['g'] += (bTz[rank*n_per:(rank+1)*n_per] - flow.properties['T1_z_avg']['g'])
-                w_solv.set_scales(1, keep_data=True)
-                w_solv['g'] += (bw[rank*n_per:(rank+1)*n_per] - flow.properties['w_avg']['g'])
-                w_z_solv.set_scales(1, keep_data=True)
-                w_z_solv['g'] += (bwz[rank*n_per:(rank+1)*n_per] - flow.properties['w_z_avg']['g'])
-                T1 = np.zeros(nz)
-                ln_rho1 = np.zeros_like(T1)
-                w = np.zeros_like(T1)
+                return_dict = IH_const_heat_bvp.solve_BVP(profiles_dict, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
+                for k in return_dict.keys():
+                    solver_states_dict[k].set_scales(1, keep_data=True)
+                    solver_states_dict[k]['g'] += ( return_dict[k][rank*n_per:(rank+1)*n_per] -\
+                                                    flow.properties['{}_avg'.format(k)]['g'] )
+                for fd in fields_to_track:
+                    profiles_dict[fd] = np.zeros(nz)
                 start_avg_time = solver.sim_time
                 
 

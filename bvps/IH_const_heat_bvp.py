@@ -51,7 +51,11 @@ r = 2
 
 nz = 128
 
-def solve_BVP(T1_in, ln_rho1_in, w_in, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
+def solve_BVP(field_dict, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
+    
+    T1_in = field_dict['T1']
+    ln_rho1_in = field_dict['ln_rho1']
+    w_in    = field_dict['w']
 
     atmosphere = FC_ConstHeating_2d_kappa_mu(nz=nz, constant_kappa=True, constant_mu=True, 
                                              epsilon=epsilon, gamma=5./3, n_rho_cz=n_rho,
@@ -89,13 +93,17 @@ def solve_BVP(T1_in, ln_rho1_in, w_in, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2,
     atmosphere.problem.parameters['rho_ev'] = rho_ev
     atmosphere.problem.parameters['ln_rho_ev'] = ln_rho_ev
     atmosphere.problem.parameters['del_lnrho_ev'] = del_ln_rho_ev
+
+    visc_flux = atmosphere._new_ncc()
+    visc_flux['g'] = field_dict['viscous_flux_z']
+    atmosphere.problem.parameters['viscous_flux_ev'] = visc_flux
     #atmosphere.problem.substitutions['PE_flux'] = 'phi*rho_ev*rho0*w'
     atmosphere.problem.substitutions['PE_flux'] = '0' 
 
     atmosphere.problem.add_equation("dz(w) - w_z = 0")
     atmosphere.problem.add_equation("dz(T1) - T1_z = 0")
 
-    atmosphere.problem.add_equation(("dz(-κ*T1_z + rho_ev*rho0*w*T0*(Cv + 1) + PE_flux) = dz(-(rho_ev*rho0*w**3)/2 - rho_ev*rho0*w*T1*(Cv+1) + μ * w * (4/3)*w_z)"))
+    atmosphere.problem.add_equation(("dz(-κ*T1_z + rho_ev*rho0*w*T0*(Cv + 1) + PE_flux) = dz(-(rho_ev*rho0*w**3)/2 - rho_ev*rho0*w*T1*(Cv+1) + viscous_flux_ev)"))
 
     logger.debug("Setting z-momentum equation")
     atmosphere.problem.add_equation((" T1_z    + T1*(del_ln_rho0+del_lnrho_ev) "+\
@@ -137,7 +145,12 @@ def solve_BVP(T1_in, ln_rho1_in, w_in, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2,
     w.set_scales(1, keep_data=True)
     T1_z.set_scales(1, keep_data=True)
     w_z.set_scales(1, keep_data=True)
-    return T1['g'], w['g'], T1_z['g'], w_z['g']
+    return_dict = dict()
+    return_dict['T1'] = T1['g']
+    return_dict['w']  = w['g']
+    return_dict['T1_z'] = T1_z['g']
+    return_dict['w_z']  = w_z['g']
+    return return_dict
 
 #    fig = plt.figure()
 #    ax = fig.add_subplot(3,1,1)
