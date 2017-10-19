@@ -266,7 +266,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 for field in solver.state.fields:
                     field.require_grid_space()
 
-            if flow.grid_average('Re') > 1e-7 and do_bvp:
+            if flow.grid_average('Re') > 1 and do_bvp:
                 avg_count += 1
                 for fd in fields_to_track:
                     profiles_dict[fd] += get_full_profile(flow.properties['{}_avg'.format(fd)]['g'][0,:], nz, comm, rank, size)
