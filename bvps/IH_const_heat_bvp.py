@@ -132,7 +132,7 @@ class IH_BVP_solver:
         self.avg_time_elapsed=0.
         self.avg_time_start = self.solver.sim_time
 
-        if self.rank < 10000:
+        if self.rank == 0:
             atmosphere = FC_ConstHeating_2d_kappa_mu(nz=nz, constant_kappa=True, constant_mu=True, 
                                                      epsilon=epsilon, gamma=5./3, n_rho_cz=n_rho,
                                                      r=r, dimensions=1, comm=MPI.COMM_SELF)
