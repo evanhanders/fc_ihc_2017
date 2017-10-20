@@ -65,18 +65,8 @@ Options:
 import logging
 
 import numpy as np
-from bvps import IH_const_heat_bvp
+from bvps.IH_const_heat_bvp import IH_BVP_solver
 from mpi4py import MPI
-
-def get_full_profile(profile, nz, comm, rank, size):
-    prof_loc = np.zeros(nz)
-    prof_glob = np.zeros(nz)
-    n_per = nz/size
-    prof_loc[n_per*rank:n_per*(rank+1)] = profile
-    comm.Allreduce(prof_loc, prof_glob, op=MPI.SUM)
-    return prof_glob
-
-
 
 def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  Taylor=None, theta=0,
@@ -227,23 +217,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z', 'L_visc_w', 'R_visc_w', 'UdotGrad(w, w_z)', 'vel_rms', 'PE_flux_z']
-        profiles_dict = dict()
-        for fd in fields_to_track:
-            flow.add_property("plane_avg({})".format(fd), name='{}_avg'.format(fd))
-            profiles_dict[fd] = np.zeros(nz)
-        avg_count = 0
-        avg_started = False
-        start_avg_time = 0
-        comm = atmosphere.domain.dist.comm_cart
-        rank = comm.rank
-        size = comm.size
-        n_per = nz/size
-        solver_states = ['T1', 'T1_z', 'w', 'w_z', 'ln_rho1']
-        solver_states_dict = dict()
-        for st in solver_states:
-            solver_states_dict[st] = solver.state[st]
-            
+        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time)
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
@@ -266,26 +240,11 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 for field in solver.state.fields:
                     field.require_grid_space()
 
-            if flow.grid_average('Re') > 1 and do_bvp:
-                avg_count += 1
-                for fd in fields_to_track:
-                    profiles_dict[fd] += get_full_profile(flow.properties['{}_avg'.format(fd)]['g'][0,:], nz, comm, rank, size)
-                if not avg_started:
-                    start_avg_time = solver.sim_time
-                    avg_started=True
-            if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time and avg_started:
-                for k in profiles_dict.keys():
-                    profiles_dict[k] /= avg_count
-                return_dict = IH_const_heat_bvp.solve_BVP(profiles_dict, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
-                for k in return_dict.keys():
-                    solver_states_dict[k].set_scales(1, keep_data=True)
-                    solver_states_dict[k]['g'] += ( return_dict[k][rank*n_per:(rank+1)*n_per] -\
-                                                    profiles_dict[k][rank*n_per:(rank+1)*n_per] )
-                for fd in fields_to_track:
-                    profiles_dict[fd] = np.zeros(nz)
-                start_avg_time = solver.sim_time
-                avg_count = 0
-                
+            if do_bvp:
+                bvp_solver.update_avgs(dt, min_Re=1)
+                if bvp_solver.check_if_solve():
+                    bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
+                                            n_rho=n_rho_cz, r=r, nz=256, use_therm=False  )
 
             # update lists
             if effective_iter % report_cadence == 0:
