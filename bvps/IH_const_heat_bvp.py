@@ -136,7 +136,7 @@ class IH_BVP_solver:
             atmosphere = FC_ConstHeating_2d_kappa_mu(nz=nz, constant_kappa=True, constant_mu=True, 
                                                      epsilon=epsilon, gamma=5./3, n_rho_cz=n_rho,
                                                      r=r, dimensions=1, comm=MPI.COMM_SELF)
-            atmosphere.problem = de.NLBVP(atmosphere.domain, variables=['T1', 'T1_z', 'rho1', 'int_rho1'])
+            atmosphere.problem = de.NLBVP(atmosphere.domain, variables=['T1', 'T1_z', 'rho1'])#, 'int_rho1'])
             old_vars = ['u', 'w', 'ln_rho1', 'v', 'u_z', 'w_z', 'v_z', 'dx(A)']
             for sub in old_vars:
                 atmosphere.problem.substitutions[sub] = '0'
@@ -166,6 +166,8 @@ class IH_BVP_solver:
                 atmosphere.problem.substitutions['T0_z_tot'] = '(T0_z)'
                 atmosphere.problem.substitutions['T0_zz_tot'] = '(T0_zz)'
 
+            atmosphere.problem.substitutions['rho1_z_L'] = '(-1/w_IVP)*(rho1*Div_u_IVP)'
+            atmosphere.problem.substitutiosn['rho1_z_C'] = '(-1/w_IVP)*(rho0_tot*Div_u_IVP + w_IVP*dz(rho0_tot))'
 
             #Thermal subs
             atmosphere.problem.substitutions['L_T_advec'] = 'Cv * w_IVP * ( rho1 * T0_z_tot + rho0_tot * T1_z )'
@@ -185,11 +187,11 @@ class IH_BVP_solver:
             #Momentum eqn substitutions
             atmosphere.problem.substitutions['L_rho_gradT'] = '(rho0 * T1_z + rho1 * T0_z)'
             atmosphere.problem.substitutions['R_rho_gradT'] = '(rho1 * T1_z)'
-            atmosphere.problem.substitutions['L_T_gradrho'] = '(T0 * dz(rho1) + T1 * dz(rho0))'
-            atmosphere.problem.substitutions['R_T_gradrho'] = '(T1 * dz(rho1))'
+            atmosphere.problem.substitutions['L_T_gradrho'] = '(T0 * rho1_z_L + T1 * rho1_z_C + T1 * dz(rho0))'
+            atmosphere.problem.substitutions['R_T_gradrho'] = '(T1 * rho1_z_L + T0 * rho1_z_C)'
 
-            atmosphere.problem.substitutions['L_HSB'] = '(L_rho_gradT + L_T_gradrho + rho1*g)'
-            atmosphere.problem.substitutions['R_NL_HSB'] = '(rho1*T1_z + T1*dz(rho1))'
+            atmosphere.problem.substitutions['L_HSB'] = '(L_rho_gradT + L_T_gradrho + T1*rho1_z_C +  rho1*g)'
+            atmosphere.problem.substitutions['R_NL_HSB'] = '(rho1*T1_z + T1*rho1_z_L)'
             if use_therm:
                 atmosphere.problem.substitutions['R_IVP_HSB'] = '(rho0*T1_z_IVP + T0 * dz(rho1_IVP) + rho1_IVP*T0_z + T1_IVP * dz(rho0) +'\
                                                                 ' rho1_IVP * T1_z_IVP + T1_IVP * dz(rho1_IVP) + rho1_IVP*g )'
@@ -201,7 +203,7 @@ class IH_BVP_solver:
 
             logger.debug('setting base equations')
             atmosphere.problem.add_equation("dz(T1) - T1_z = 0")
-            atmosphere.problem.add_equation("dz(int_rho1) - rho1 = 0")
+#            atmosphere.problem.add_equation("dz(int_rho1) - rho1 = 0")
 
             logger.debug('setting energy equation')
             atmosphere.problem.add_equation(("L_T_advec + L_PdV  + L_kappa - L_VH = "
@@ -213,8 +215,8 @@ class IH_BVP_solver:
 
             atmosphere.problem.add_bc('left(T1_z) = 0') 
             atmosphere.problem.add_bc("right(T1) = 0")
-            atmosphere.problem.add_bc('left(rho1) - right(rho1) = 0') 
-            atmosphere.problem.add_bc('right(int_rho1) = 0') 
+#            atmosphere.problem.add_bc('left(rho1) - right(rho1) = 0') 
+#            atmosphere.problem.add_bc('right(int_rho1) = 0') 
 
             solver = atmosphere.problem.build_solver()
 
