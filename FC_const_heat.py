@@ -244,7 +244,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 bvp_solver.update_avgs(dt, min_Re=1)
                 if bvp_solver.check_if_solve():
                     bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
-                                            n_rho=n_rho_cz, r=r, nz=256, use_therm=False  )
+                                            n_rho=n_rho_cz, r=r, nz=256, use_therm=True  )
 
             # update lists
             if effective_iter % report_cadence == 0:

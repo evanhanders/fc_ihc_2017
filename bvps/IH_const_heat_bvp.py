@@ -97,14 +97,15 @@ class IH_BVP_solver:
         self.avg_time_elapsed = 0.
         self.avg_time_start   = 0.
         self.avg_started      = False
-        
+       
+        self.comm = comm
         self.rank = comm.rank
         self.size = comm.size
         self.n_per_proc = nz/self.size
 
     def get_full_profile(self, prof_name):
-        local = np.zeros(nz)
-        glob  = np.zeros(nz)
+        local = np.zeros(self.nz)
+        glob  = np.zeros(self.nz)
         local[self.n_per_proc*self.rank:self.n_per_proc*(self.rank+1)] = \
                         self.flow.properties['{}_avg'.format(prof_name)]['g'][0,:]
         self.comm.Allreduce(local, glob, op=MPI.SUM)
@@ -117,10 +118,10 @@ class IH_BVP_solver:
         if self.flow.grid_average('Re') > min_Re:
             self.avg_time_elapsed += dt
             for fd in FIELDS.keys():
-                self.profiles_dict[fd] += dt*self.get_full_profiles(fd)
-        if not self.avg_started:
-            self.avg_started=True
-            self.avg_time_start = self.solver.sim_time
+                self.profiles_dict[fd] += dt*self.get_full_profile(fd)
+            if not self.avg_started:
+                self.avg_started=True
+                self.avg_time_start = self.solver.sim_time
 
     def check_if_solve(self):
         return self.avg_started*((self.solver.sim_time - self.avg_time_start) >= self.bvp_time)
@@ -220,7 +221,7 @@ class IH_BVP_solver:
         # Iterations
         tolerance=1e-3*epsilon
         pert = solver.perturbations.data
-        pert.fill(epsilon)
+        pert.fill(1+tolerance)
         count = 0
         while np.sum(np.abs(pert)) > tolerance:
             count += 1
@@ -231,13 +232,13 @@ class IH_BVP_solver:
         T1 = solver.state['T1']
         T1_z = solver.state['T1_z']
         rho1 = solver.state['rho1']
-        print(T1['g'], T1_z['g'], rho1['g'])
 
         fields = [('T1', T1), ('T1_z', T1_z), ('rho1', rho1)]
         for nm, f in fields:
             f.set_scales(1, keep_data=True)
             plt.plot(atmosphere.z, f['g'])
             plt.savefig('{}_plot.png'.format(nm))
+            plt.close()
 
         return_dict = dict()
         for v in VARS.keys():
@@ -258,14 +259,13 @@ class IH_BVP_solver:
 
             f.set_scales(1, keep_data=False)
             rho1.set_scales(1, keep_data=True)
-            atmosphere.rho0.set_scales(1, keep_data=True)
-            f['g'] = atmosphere.rho0['g'] + rho1['g']
+            f['g'] = rho1['g']
             f.set_scales(self.nz/nz, keep_data=True)
             atmosphere.rho0.set_scales(self.nz/nz, keep_data=True)
-            f['g'] += atmosphere.rho0['g']*(np.exp(self.profiles_dict['ln_rho1_IVP']) - 1)
+            f['g'] += atmosphere.rho0['g']*np.exp(self.profiles_dict['ln_rho1_IVP'])
             f.set_scales(self.nz/nz, keep_data=True)
             atmosphere.rho0.set_scales(self.nz/nz, keep_data=True)
-            return_dict['ln_rho1_IVP'] = f['g'] - np.log(atmosphere.rho0['g'])
+            return_dict['ln_rho1_IVP'] = np.log(f['g']) - np.log(atmosphere.rho0['g'])
         else:
             f = atmosphere._new_ncc()
             T1.set_scales(1, keep_data=True)
@@ -285,7 +285,17 @@ class IH_BVP_solver:
             f['g'] = atmosphere.rho0['g'] + rho1['g']
             f.set_scales(self.nz/nz, keep_data=True)
             atmosphere.rho0.set_scales(self.nz/nz, keep_data=True)
-            return_dict['ln_rho1_IVP'] = f['g'] - np.log(atmosphere.rho0['g'])
+            return_dict['ln_rho1_IVP'] = np.log(f['g']) - np.log(atmosphere.rho0['g'])
+
+        for k in return_dict.keys():
+            f = atmosphere._new_ncc()
+            f['g'] = atmosphere.z
+            f.set_scales(self.nz/nz, keep_data=True)
+            plt.plot(f['g'], return_dict[k] - self.profiles_dict[k])
+            plt.savefig('{}_plot.png'.format(k))
+            plt.close()
+
+
 
         for v in VARS.keys():
             self.solver_states[v].set_scales(1, keep_data=True)
