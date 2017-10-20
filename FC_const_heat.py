@@ -227,7 +227,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z', 'L_visc_w', 'R_visc_w', 'UdotGrad(w, w_z)', 'vel_rms']
+        fields_to_track = ['T1', 'T1_z', 'ln_rho1', 'w', 'w_z', 'viscous_flux_z', 'L_visc_w', 'R_visc_w', 'UdotGrad(w, w_z)', 'vel_rms', 'PE_flux_z']
         profiles_dict = dict()
         for fd in fields_to_track:
             flow.add_property("plane_avg({})".format(fd), name='{}_avg'.format(fd))
@@ -274,14 +274,17 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                     start_avg_time = solver.sim_time
                     avg_started=True
             if do_bvp and (solver.sim_time - start_avg_time)/atmosphere.buoyancy_time > bvp_time and avg_started:
+                for k in profiles_dict.keys():
+                    profiles_dict[k] /= avg_count
                 return_dict = IH_const_heat_bvp.solve_BVP(profiles_dict, Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon, n_rho=n_rho_cz, r=r, nz=nz)
                 for k in return_dict.keys():
                     solver_states_dict[k].set_scales(1, keep_data=True)
                     solver_states_dict[k]['g'] += ( return_dict[k][rank*n_per:(rank+1)*n_per] -\
-                                                    flow.properties['{}_avg'.format(k)]['g'] )
+                                                    profiles_dict[k][rank*n_per:(rank+1)*n_per] )
                 for fd in fields_to_track:
                     profiles_dict[fd] = np.zeros(nz)
                 start_avg_time = solver.sim_time
+                avg_count = 0
                 
 
             # update lists

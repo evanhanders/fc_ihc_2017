@@ -31,6 +31,8 @@ References:
 """
 
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from dedalus import public as de
@@ -117,7 +119,7 @@ def solve_BVP(field_dict, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
     atmosphere.problem.parameters['R_visc_w_ev']  = R_visc
     atmosphere.problem.parameters['L_visc_w_ev']  = L_visc
 
-    atmosphere.problem.substitutions['rho0_tot'] = '(rho_ev + rho0)'
+    atmosphere.problem.substitutions['rho0_tot'] = '(rho_ev*rho0)'
     atmosphere.problem.substitutions['T0_tot'] = '(T0 + T1_ev)'
     atmosphere.problem.substitutions['T0_z_tot'] = '(T0_z + T1_z_ev)'
     atmosphere.problem.substitutions['T0_zz_tot'] = '(T0_zz + T1_zz_ev)'
@@ -131,13 +133,17 @@ def solve_BVP(field_dict, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
     visc_flux['g'] = field_dict['viscous_flux_z']
     atmosphere.problem.parameters['VF_ev'] = visc_flux
 
-    atmosphere.problem.substitutions['PE_flux'] = '0' 
+    PE_flux = atmosphere._new_ncc()
+    PE_flux['g'] = field_dict['PE_flux_z']
+    atmosphere.problem.parameters['PE_flux'] = PE_flux
 
     #Thermal subs
     atmosphere.problem.substitutions['L_enth_flux'] = '(rho0_tot * w_ev * (Cv + 1) * T1 + rho1 * w_ev * (Cv + 1) * T0_tot )'
     atmosphere.problem.substitutions['R_enth_flux'] = '(rho1 * w_ev * (Cv + 1))'
     atmosphere.problem.substitutions['L_KE_flux']   = '(rho1 * w_ev * (vel_rms_ev)**2)/2'
     atmosphere.problem.substitutions['R_KE_flux']   = '(rho0_tot * w_ev * (vel_rms_ev)**2)/2'
+    atmosphere.problem.substitutions['L_PE_flux'] = '(rho1 * w_ev * phi)'
+    atmosphere.problem.substitutions['R_PE_flux'] = '(rho0_tot * w_ev * phi)'
 
     #Momentum eqn substitutions
     atmosphere.problem.substitutions['L_rho_gradT'] = '(rho0_tot * T1_z + rho1 * T0_z_tot)'
@@ -150,7 +156,7 @@ def solve_BVP(field_dict, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
     atmosphere.problem.add_equation("dz(int_rho1) - rho1 = 0")
 
     logger.debug('setting energy equation')
-    atmosphere.problem.add_equation(("-κ * dz(T1_z) + dz(L_enth_flux  + L_KE_flux)  = κ * (T0_zz_tot + IH) - dz(R_enth_flux + R_KE_flux + VF_ev) "))
+    atmosphere.problem.add_equation(("-κ * dz(T1_z) + dz(L_enth_flux + L_KE_flux + L_PE_flux)  = κ * (T0_zz_tot + IH) - dz(R_enth_flux + R_KE_flux + R_PE_flux + VF_ev) "))
 
     logger.debug("Setting z-momentum equation")
     atmosphere.problem.add_equation((" rho1 * (udotgradw - visc_w_ev + g) + L_rho_gradT + L_T_gradrho = -rho0_tot * (udotgradw - visc_w_ev + g) - R_rho_gradT - R_T_gradrho"))
@@ -185,8 +191,17 @@ def solve_BVP(field_dict, Ra=460, Pr=1, epsilon=1e-4, n_rho=3, r=2, nz=128):
     rho1.set_scales(1, keep_data=True)
     rho_ev.set_scales(1, keep_data=True)
     atmosphere.rho0.set_scales(1, keep_data=True)
+    T1_ev['g'] += T1['g']
+    T1_ev.differentiate('z', out=T1_z_ev)
+    T1_ev.set_scales(1, keep_data=True)
+    T1_z_ev.set_scales(1, keep_data=True)
     return_dict = dict()
-    return_dict['T1'] = T1['g'] + T1_ev['g']
-    return_dict['T1_z'] = T1_z['g'] + T1_z_ev['g']
-    return_dict['ln_rho1'] = np.log(1 + (rho1['g'] + rho_ev['g'])/atmosphere.rho0['g'])
+    return_dict['T1'] = T1_ev['g']
+    return_dict['T1_z'] = T1_z_ev['g']
+    return_dict['ln_rho1'] = np.log(rho_ev['g'] + (rho1['g'])/atmosphere.rho0['g'])
+    for k in return_dict.keys():
+        plt.figure()
+        plt.plot(atmosphere.z, return_dict[k])
+        plt.savefig('{}_fig.png'.format(k))
+        plt.close()
     return return_dict
