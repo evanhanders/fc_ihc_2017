@@ -305,3 +305,6 @@ class IH_BVP_solver:
         for v in VARS.keys():
             self.solver_states[v].set_scales(1, keep_data=True)
             self.solver_states[v]['g'] += (return_dict[v] - self.profiles_dict[v])[self.n_per_proc*self.rank:self.n_per_proc*(self.rank+1)]
+
+        for fd in FIELDS.keys():
+            self.profiles_dict[fd] = np.zeros(self.nz)

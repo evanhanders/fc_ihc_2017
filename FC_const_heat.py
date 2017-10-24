@@ -242,7 +242,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                     field.require_grid_space()
 
             if do_bvp:
-                bvp_solver.update_avgs(dt, min_Re=1e-1)
+                bvp_solver.update_avgs(dt, min_Re=1e0)
                 if bvp_solver.check_if_solve():
                     bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
                                             n_rho=n_rho_cz, r=r, nz=nz*2, use_therm=True  )
