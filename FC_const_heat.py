@@ -61,6 +61,7 @@ Options:
 
     --do_bvp                             If flagged, do BVPs at regular intervals when Re > 1 to converge faster
     --bvp_time=<time>                    How often to do a bvp, in tbuoy [default: 50]
+    --num_bvps=<num>                     Maximum number of BVPs to do [default: 1]
 """
 import logging
 
@@ -80,7 +81,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
-                 verbose=False, do_bvp=False, bvp_time=50):
+                 verbose=False, do_bvp=False, bvp_time=50, num_bvps=1):
 
     import dedalus.public as de
     from dedalus.tools  import post
@@ -217,7 +218,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time)
+        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps)
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
@@ -241,7 +242,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                     field.require_grid_space()
 
             if do_bvp:
-                bvp_solver.update_avgs(dt, min_Re=1)
+                bvp_solver.update_avgs(dt, min_Re=1e-1)
                 if bvp_solver.check_if_solve():
                     bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
                                             n_rho=n_rho_cz, r=r, nz=nz*2, use_therm=True  )
@@ -519,4 +520,5 @@ if __name__ == "__main__":
                  split_diffusivities=args['--split_diffusivities'],
                  verbose=args['--verbose'],
                  do_bvp=args['--do_bvp'],
-                 bvp_time=float(args['--bvp_time']))
+                 bvp_time=float(args['--bvp_time']),
+                 num_bvps=int(args['--num_bvps']))
