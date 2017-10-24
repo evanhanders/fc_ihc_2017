@@ -1,0 +1,159 @@
+%\documentclass[iop]{emulateapj}
+\documentclass[aps, pre, onecolumn, nofootinbib, notitlepage, groupedaddress, amsfonts, amssymb, amsmath, longbibliography]{revtex4-1}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+\usepackage{bm}
+\usepackage{natbib}
+\usepackage{longtable}
+\LTcapwidth=0.87\textwidth
+
+\newcommand{\Div}[1]{\ensuremath{\nabla\cdot\left( #1\right)}}
+\newcommand{\angles}[1]{\ensuremath{\left\langle #1 \right\rangle}}
+\newcommand{\grad}{\ensuremath{\nabla}}
+\newcommand{\RB}{Rayleigh-B\'{e}nard }
+\newcommand{\stressT}{\ensuremath{\bm{\bar{\bar{\Pi}}}}}
+\newcommand{\lilstressT}{\ensuremath{\bm{\bar{\bar{\sigma}}}}}
+\newcommand{\nrho}{\ensuremath{n_{\rho}}}
+\newcommand{\approptoinn}[2]{\mathrel{\vcenter{
+	\offinterlineskip\halign{\hfil$##$\cr
+	#1\propto\cr\noalign{\kern2pt}#1\sim\cr\noalign{\kern-2pt}}}}}
+
+\newcommand{\appropto}{\mathpalette\approptoinn\relax}
+
+\newcommand\mnras{{MNRAS}}%
+
+\begin{document}
+\author{Evan H. Anders}
+\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
+\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
+\author{Benjamin P. Brown}
+\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
+\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
+\title{BVPs to assist in convergence of IH atmospheres}
+
+\begin{abstract}
+An abstract will go here eventually
+\end{abstract}
+\maketitle
+
+
+\section{Stellar structure models}
+So in the spirit of Steve's stellar structures class (and from his notes found online,
+\url{http://lasp.colorado.edu/~cranmer/ASTR_5700_2016/index.html}) I am going to
+draw inspiration from stellar structure models to solve BVPs which make the thermal state of my
+solutions converge more rapidly.
+
+Stellar structure models essentially have five equations:
+\begin{equation}
+\begin{split}
+\frac{d M_r}{dr} &= 4\pi r^2 \rho \qquad \text{(mass conservation)} \\
+\frac{d P}{dr} &= -\frac{G M_r}{r^2}\rho \qquad \text{(Hydrostatic balance)} \\
+\frac{d L_r}{dr} &= 4\pi r^2 \rho \epsilon \qquad \text{(Conservation of energy)} \\
+\frac{d T}{dr} &= \begin{cases}
+\left(\frac{dT}{dr}\right)_{\text{rad}} & \text{, if convectively stable}\\
+\left(\frac{dT}{dr}\right)_{\text{ad}} - \Delta\grad T & \text{, if convectively unstable}\\
+\end{cases} \qquad \text{(Basically where all of the model-dependent stuff comes in)} \\
+P &= P(\rho, T, \mu)  \qquad \text{(equation of state)}
+\end{split}
+\end{equation}
+where $\epsilon$ is the energy generation rate (erg / g / s), and $\mu$ is the
+mean atomic weight, or something of the sort.
+
+Basically, you have to solve a boundary value problem in order to find out more about the
+problem.  In general, in stellar structure models, there are technically six variables,
+\begin{enumerate}
+\item Position: $r = [0, R_*]$
+\item Mass: $M_r = [0, M_*]$
+\item Mass density: $\rho = [\rho_c, \rho_{photo}]$
+\item Pressure: $P = [P_c, P_{photo}]$
+\item Temperature: $T = [T_c, T_{eff}]$
+\item Luminosity: $L_r = [0, L_*]$
+\end{enumerate}
+Generally, in stellar structure models, we're interested in 6 things:
+$R_*, M_*, \rho_c, P_c, T_c, L_*$.  That's six variables for five equations,
+so usually $M_*$ is specified and then the rest are determined based on a boundary value problem.
+
+...that's basically what we want to do in our problems.
+
+\section{Our Equations}
+We don't have a spherical star, we have a cartesian box.  So all of the $4\pi r^2$ area
+elements turn into $xy$.  When we take a horizontal average over our simulaton, $x$ and $y$
+drop out of the problem completely.  So for the 1D, $z$-direction boundary value problem that
+we actually want to solve, our equations are
+\begin{equation}
+\begin{split}
+\frac{d M}{dz} &= \rho \\
+\frac{d P}{dz} &= -\rho g \hat{z} - \rho \bm{u}\cdot\grad\bm{u} - \Div{\stressT} \\
+\frac{d (\text{Fluxes})}{d z} &= \kappa \text{(IH)} \\
+T_{z} &= \frac{d T}{d z} \\
+P = \rho T,
+\end{split}
+\end{equation}
+where the second and third equations are the real kickers here.  In fact, the third equation is a combination
+of the 3rd and 4th equation from a stellar structure model: it is conservation of energy, and it includes
+all of the assumptions that we're putting into the model.
+
+In a steady state, potential energy flux is basically zero (because the atmosphere is no longer settling).
+At least, this is true for the low mach number case.  Thus, when we consider all of the fluxes in our problem,
+we only need to consider enthalpy flux, KE flux, viscous flux, and conductive flux.  Thus, the third equation
+above has the form
+\begin{equation}
+\frac{d}{dz}\left(-\kappa T_z + \rho w \left[\frac{|\bm{u}|^2}{2} + 
+\left(c_V T + \frac{P}{\rho}\right)\right] + \bm{u}\cdot\stressT  \right) = \kappa \text{(IH)},
+\end{equation}
+where the terms are, in order, the conductive flux, the KE flux, the enthalpy flux, and the viscous flux.  The
+RHS has the internal heating.
+
+Technically, I'm dealing with a 1D problem which knows horizontal averages of an evolved 2- or 3- dimensional
+convective solution.  I will use $\overline{A}$ to represent the horizontal- and time- average of a quantity
+from the IVP.  Using this notation, my full set of equations to solve is
+\begin{equation}
+\begin{split}
+\frac{d M}{dz} &= \rho \\
+\frac{d P}{dz} &= -\rho g \hat{z} - \rho \overline{\bm{u}\cdot\grad\bm{u}} - \overline{\Div{\stressT}} \\
+\frac{d}{dz}\left(-\kappa T_z + \rho\overline{w}\left[\frac{\overline{|\bm{u}|^2}}{2} + 
+\left(c_V T + \frac{P}{\rho}\right)\right] + \overline{\bm{u}\cdot\stressT}  \right) &= \kappa \text{(IH)}, \\
+T_z &= \frac{dT}{dz} \\
+P &= \rho T,
+\end{split}
+\end{equation}
+All variables with overbars must be measured directly from the evolved solution.  Technically, there's some
+problem here with my averaging -- I'm averaging over *part* of some of the terms, but not all of them
+(because $\rho$, etc. are variables that are evolving).  I need to think about this more in the future,
+but for the low $\epsilon$ case, what I'm doing seems to work fairly well.
+
+\subsection{Implementation in Dedalus}
+Anyways, I'm interested specifically in getting this to work in dedalus.  Thus far, I think we have four
+important variables: $M_1$, the fluctuation in the total mass around the background;
+$\rho_1$, fluctuations in the density profile; $T_1$, fluctuations in the temperature profile; and
+$dT_1 / dz$, fluctuations in the temperature profile's gradients.  The background values
+($M_0$, $\rho_0$, $T_0$, $dT_0/dz$) should all be set by a combination of the
+initial conductive reference state, and the evolved time- and horizontally- averaged profiles from the
+IVP.
+
+The boundary conditions are:
+\begin{equation}
+\begin{split}
+M_1(z=0) &= 0 \\
+M_1(z=L_z) &= 0 \\
+T_1(z=L_z) &= 0 \\
+\frac{dT_1}{dz}(z=0) &= 0.
+\end{split}
+\end{equation}
+The last two of these conditions are just the standard thermal boundary conditions used in these
+simulations.  The first two conditions ensure that no mass is added to the system.  The structure of
+the dz(fluxes) = IH equation ensures that flux equilibrium is met throughout the atmosphere, and the
+dz(P) equation ensures that there are no $m = 0$ pressure imbalances in the atmosphere.
+
+Sweetness.
+
+
+\bibliography{../biblio.bib}
+\end{document}
