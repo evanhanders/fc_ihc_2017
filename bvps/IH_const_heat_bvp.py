@@ -57,16 +57,20 @@ FIELDS = OrderedDict([  ('T1_IVP', 'T1'),
                         ('T1_z_IVP', 'T1_z'),
                         ('ln_rho1_IVP', 'ln_rho1'),
                         ('w_IVP', 'w'), 
-                        ('w_z_IVP', 'w_z'), 
-                        ('VF', 'viscous_flux_z'), 
-                        ('VH', 'R_visc_heat'),
+                        ('EF_IVP': 'h_flux_z'), 
+                        ('VF_IVP', 'viscous_flux_z'), 
+                        ('KEF_IVP', 'KE_flux_z'),
                         ('L_visc', 'L_visc_w'), 
                         ('R_visc', 'R_visc_w'), 
                         ('UdotGrad_w', 'UdotGrad(w, w_z)'), 
-                        ('vel_rms_IVP', 'vel_rms'), 
-                        ('PE_flux', 'PE_flux_z'),
-                        ('Div_u_IVP', 'Div_u'),
-                        ('u_dx_ln_rho_IVP', '(u * dx(ln_rho1))')
+                        ('rho_UdotGrad_w', '(rho_full * UdotGrad(w, w_z))'), 
+                        ('KEF_norho', '(w*(vel_rms**2)/2)'), 
+                        ('rho_w_IVP', '(rho_full * w)'),
+                        ('T_w_IVP', '(T_full * w)'),
+                        ('rho_gradT_IVP', '(rho_full*dz(T_full))'),
+                        ('rho_full_IVP', '(rho_full)'),
+                        ('T_gradrho_IVP', '(T_full * dz(rho_full))'),
+                        ('dz_rho_full_IVP', 'dz(rho_full)')
                     ])
 VARS   = OrderedDict([  ('T1_IVP', 'T1'),
                         ('T1_z_IVP', 'T1_z'), 
@@ -119,6 +123,8 @@ class IH_BVP_solver:
         """
         dt - The size of the current timestep taken.
         """
+        if self.completed_bvps >= self.num_bvps:
+            return
         if self.flow.grid_average('Re') > min_Re:
             if (self.solver.sim_time - self.avg_time_start) < self.bvp_equil_time:
                 return
@@ -177,29 +183,20 @@ class IH_BVP_solver:
                 f['g'] = self.profiles_dict[k]
                 atmosphere.problem.parameters[k] = f
             
-            atmosphere.problem.substitutions['T1_zz_IVP'] = 'dz(T1_z_IVP)'
 
-            # Set density from continuity
-#            grad_ln_rho1, ln_rho1 = self._get_evolved_ln_rho(atmosphere, nz, self.nz)
-#            atmosphere.problem.parameters['grad_ln_rho1_IVP'] = grad_ln_rho1
-#            atmosphere.problem.parameters['ln_rho1_IVP']      = ln_rho1
-            atmosphere.problem.substitutions['rho_IVP_full'] = 'rho0*exp(ln_rho1_IVP)'
-            atmosphere.problem.substitutions['rho1_IVP']  = 'rho0*(exp(ln_rho1_IVP) - 1)'
-            atmosphere.problem.substitutions['rho1_z_IVP'] = 'dz(rho1_IVP)'
-            atmosphere.problem.substitutions['rho0_z'] = 'dz(rho0)'
-
-            atmosphere.problem.substitutions['rho0_tot'] = '(rho1_IVP + rho0)'
-            atmosphere.problem.substitutions['rho0_z_tot'] = 'dz(rho0_tot)'
+            atmosphere.problem.substitutions['rho0_tot'] = 'rho_full_IVP'
+            atmosphere.problem.substitutions['rho0_z_tot'] = 'dz_rho_full_IVP'
             atmosphere.problem.substitutions['T0_tot'] = '(T0 + T1_IVP)'
             atmosphere.problem.substitutions['T0_z_tot'] = '(T0_z + T1_z_IVP)'
+            atmosphere.problem.substitutions['T1_zz_IVP'] = 'dz(T1_z_IVP)'
             atmosphere.problem.substitutions['T0_zz_tot'] = '(T0_zz + T1_zz_IVP)'
             
             # Enthalpy flux = w * (Cv + 1) * T
-            atmosphere.problem.substitutions['enth_flux_L'] = '( (rho0_tot * T1 + rho1 * T0_tot) * (Cv + 1) * w_IVP)'
-            atmosphere.problem.substitutions['enth_flux_R'] = '( (rho0_tot * T0_tot + rho1 * T1) * (Cv + 1) * w_IVP )'
+            atmosphere.problem.substitutions['enth_flux_L'] = '((Cv+1)*( rho_w_IVP*T1 + T_w_IVP*rho1  ) )'
+            atmosphere.problem.substitutions['enth_flux_R'] = '( EF_IVP + rho1*T1*w_IVP*(Cv+1) )'
             # KE flux = w * (vel_rms)^2 / 2
-            atmosphere.problem.substitutions['KE_flux_L']   = '(rho1 * w_IVP * ( (vel_rms_IVP)**2 ) / 2)'
-            atmosphere.problem.substitutions['KE_flux_R']   = '(rho0 * w_IVP * ( (vel_rms_IVP)**2 ) / 2)'
+            atmosphere.problem.substitutions['KE_flux_L']   = '( rho1 * KEF_norho )'
+            atmosphere.problem.substitutions['KE_flux_R']   = '( KEF_IVP )'
             # PE flux = w * phi
             atmosphere.problem.substitutions['PE_flux_L']   = '0'#'(rho1 * w_IVP * phi)'
             atmosphere.problem.substitutions['PE_flux_R']   = '0'#'(rho0 * w_IVP * phi)'
@@ -207,7 +204,7 @@ class IH_BVP_solver:
             atmosphere.problem.substitutions['visc_flux_R'] = '(VF)'
             # Conductive flux
             atmosphere.problem.substitutions['kappa_flux_L'] = '(-(κ) * T1_z)' 
-            atmosphere.problem.substitutions['kappa_flux_R'] = '(-(κ) * (T1_z_IVP + T0_z))' 
+            atmosphere.problem.substitutions['kappa_flux_R'] = '(-(κ) * T0_z_tot)' 
 
             atmosphere.problem.substitutions['flux_L'] = '(kappa_flux_L + enth_flux_L + KE_flux_L + PE_flux_L)'
             atmosphere.problem.substitutions['flux_R'] = '(kappa_flux_R + enth_flux_R + KE_flux_R + PE_flux_R + visc_flux_R)'
@@ -215,9 +212,9 @@ class IH_BVP_solver:
 
             #Momentum eqn substitutions
             atmosphere.problem.substitutions['L_rho_gradT'] = '(rho0_tot * T1_z + rho1 * T0_z_tot)'
-            atmosphere.problem.substitutions['R_rho_gradT'] = '(rho1 * T1_z + rho0_tot * T0_z_tot)'
+            atmosphere.problem.substitutions['R_rho_gradT'] = '(rho1 * T1_z + rho_gradT_IVP)'
             atmosphere.problem.substitutions['L_T_gradrho'] = '(T0_tot * dz(rho1) + T1 * rho0_z_tot)'
-            atmosphere.problem.substitutions['R_T_gradrho'] = '(T1 * dz(rho1) + T0_tot * rho0_z_tot)'
+            atmosphere.problem.substitutions['R_T_gradrho'] = '(T1 * dz(rho1) + T_gradrho_IVP )'
 
             atmosphere.problem.substitutions['L_HSB'] = '(L_rho_gradT + L_T_gradrho + rho1*g)'
             atmosphere.problem.substitutions['R_HSB'] = '(R_rho_gradT + R_T_gradrho + rho0_tot*g)'
@@ -227,12 +224,11 @@ class IH_BVP_solver:
             logger.debug('setting equations')
             atmosphere.problem.add_equation("dz(T1) - T1_z = 0")
             atmosphere.problem.add_equation("dz(M1) - rho1 = 0")
-            #atmosphere.problem.add_equation(("dz(flux_L) = -dz(flux_R) + κ*IH/rho_IVP_full - κ*(1 + IH*z)*dz(rho_IVP_full)"))
             atmosphere.problem.add_equation(("dz(flux_L) = -dz(flux_R) + κ*IH"))
 
             logger.debug("Setting z-momentum equation")
             atmosphere.problem.add_equation((" rho1 * UdotGrad_w + L_HSB - rho1*visc_w = "
-                                             " - R_HSB + rho0_tot*(visc_w - UdotGrad_w)"))
+                                             " - R_HSB + rho0_tot*visc_w - rho_UdotGrad_w)"))
 
             atmosphere.problem.add_bc("left(T1_z) = 0") 
             atmosphere.problem.add_bc("right(T1) = 0")
