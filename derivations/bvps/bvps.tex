@@ -234,7 +234,7 @@ With the substitutions from the above sections, my four equations that I impleme
 \begin{enumerate}
 \item \texttt{dz(M1) - rho1 = 0}
 \item \texttt{dz(T1) - T1\_z = 0}
-\item \texttt{dz(}$-\kappa$\texttt{T1\_z + rho1 * (w\_vel\_squared + T\_w\_IVP) + T1 * rho\_w\_IVP) =} \\
+\item \texttt{dz(}$-\kappa$\texttt{T1\_z + rho1 * (w\_vel\_squared + T\_w\_IVP*(Cv + 1)) + T1 * rho\_w\_IVP* (Cv + 1)) =} \\
 	  \texttt{-dz(}$-\kappa$\texttt{T0\_z\_full + visc\_flux + KE\_flux\_IVP + Enth\_flux\_IVP + (Cv+1)*rho1*T1*w\_IVP) +} $\kappa$\texttt{(IH)}
 \item \texttt{T0\_full*dz(rho1) + T1*rho0\_z\_full + rho0\_full*dz(T1) + rho1 * T0\_z\_full + rho1 g + rho1 * uDotGradw} \\
 	  \texttt{= -T\_grad\_rho - T1*dz(rho1) - rho\_grad\_T - rho1*dz(T1) - rho0\_full * g - rho\_uDotGradw - visc\_w }
