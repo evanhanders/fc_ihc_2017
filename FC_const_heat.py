@@ -60,8 +60,9 @@ Options:
     --verbose                            Do extra output (Peclet and Nusselt numbers) to screen
 
     --do_bvp                             If flagged, do BVPs at regular intervals when Re > 1 to converge faster
-    --bvp_time=<time>                    How often to do a bvp, in tbuoy [default: 50]
     --num_bvps=<num>                     Maximum number of BVPs to do [default: 1]
+    --bvp_time=<time>                    How often to do a bvp, in tbuoy [default: 20]
+    --bvp_equil_time=<time>              How long to wait after a previous BVP before starting to average for next one, in tbuoy [default: 20]
 """
 import logging
 
@@ -81,7 +82,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
-                 verbose=False, do_bvp=False, bvp_time=50, num_bvps=1):
+                 verbose=False, do_bvp=False, bvp_time=20, num_bvps=1, bvp_equil_time=20):
 
     import dedalus.public as de
     from dedalus.tools  import post
@@ -218,7 +219,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps)
+        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps, bvp_equil_time)
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
@@ -521,4 +522,5 @@ if __name__ == "__main__":
                  verbose=args['--verbose'],
                  do_bvp=args['--do_bvp'],
                  bvp_time=float(args['--bvp_time']),
-                 num_bvps=int(args['--num_bvps']))
+                 num_bvps=int(args['--num_bvps']),
+                 bvp_equil_time=float(args['--bvp_equil_time']))

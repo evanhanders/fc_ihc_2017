@@ -75,7 +75,7 @@ VARS   = OrderedDict([  ('T1_IVP', 'T1'),
 
 class IH_BVP_solver:
 
-    def __init__(self, nz, flow, comm, solver, bvp_time, num_bvps):
+    def __init__(self, nz, flow, comm, solver, bvp_time, num_bvps, bvp_equil_time):
         """
         
         nz   - the vertical resolution of the IVP
@@ -99,6 +99,7 @@ class IH_BVP_solver:
             self.profiles_dict[fd] = np.zeros(nz)
         self.avg_time_elapsed = 0.
         self.avg_time_start   = 0.
+        self.bvp_equil_time   = bvp_equil_time
         self.avg_started      = False
        
         self.comm = comm
@@ -119,6 +120,8 @@ class IH_BVP_solver:
         dt - The size of the current timestep taken.
         """
         if self.flow.grid_average('Re') > min_Re:
+            if (self.solver.sim_time - self.avg_time_start) < self.bvp_equil_time:
+                return
             self.avg_time_elapsed += dt
             for fd in FIELDS.keys():
                 self.profiles_dict[fd] += dt*self.get_full_profile(fd)
@@ -127,7 +130,7 @@ class IH_BVP_solver:
                 self.avg_time_start = self.solver.sim_time
 
     def check_if_solve(self):
-        return self.avg_started*((self.solver.sim_time - self.avg_time_start) >= self.bvp_time)*(self.completed_bvps < self.num_bvps)
+        return self.avg_started*((self.solver.sim_time - self.avg_time_start - self.bvp_equil_time) >= self.bvp_time)*(self.completed_bvps < self.num_bvps)
 
     def _get_evolved_ln_rho(self, atmosphere, nz_atmo, nz_IVP):
         #Calculate from continuity
