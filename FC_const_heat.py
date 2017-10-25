@@ -219,7 +219,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps, bvp_equil_time)
+        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps, bvp_equil_time*atmosphere.buoyancy_time)
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
