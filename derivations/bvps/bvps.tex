@@ -117,36 +117,135 @@ from the IVP.  Using this notation, my full set of equations to solve is
 \begin{equation}
 \begin{split}
 \frac{d M}{dz} &= \rho \\
-\frac{d P}{dz} &= -\rho g \hat{z} - \rho \overline{\bm{u}\cdot\grad\bm{u}} - \overline{\Div{\stressT}} \\
-\frac{d}{dz}\left(-\kappa T_z + \rho\overline{w}\left[\frac{\overline{|\bm{u}|^2}}{2} + 
-\left(c_V T + \frac{P}{\rho}\right)\right] + \overline{\bm{u}\cdot\stressT}  \right) &= \kappa \text{(IH)}, \\
+\overline{\frac{d P}{dz}} &= \overline{-\rho g \hat{z} - \rho \bm{u}\cdot\grad\bm{u} - \Div{\stressT}} \\
+\overline{\frac{d}{dz}\left(-\kappa T_z + \rho w\left[\frac{|\bm{u}|^2}{2} + 
+\left(c_V T + \frac{P}{\rho}\right)\right] + \bm{u}\cdot\stressT  \right)} &= \overline{\kappa \text{(IH)}}, \\
 T_z &= \frac{dT}{dz} \\
 P &= \rho T,
 \end{split}
 \end{equation}
-All variables with overbars must be measured directly from the evolved solution.  Technically, there's some
-problem here with my averaging -- I'm averaging over *part* of some of the terms, but not all of them
-(because $\rho$, etc. are variables that are evolving).  I need to think about this more in the future,
-but for the low $\epsilon$ case, what I'm doing seems to work fairly well.
+Here, $\overline{A} = \iiint A \,dx \,dy \,dt / (L_y\cdot L_x\cdot T)$ is the time- and horizontally-
+averaged profile of the variable $A$, where $T$ is the time interval over which an average is taken.
+Fortunately, $d/dz$ commutes with this operation, so we can just put it inside of any z-derivatives
+and we should be fine.  Let's break things up really carefully.
 
-\subsection{Implementation in Dedalus}
-Anyways, I'm interested specifically in getting this to work in dedalus.  Thus far, I think we have four
-important variables: $M_1$, the fluctuation in the total mass around the background;
-$\rho_1$, fluctuations in the density profile; $T_1$, fluctuations in the temperature profile; and
-$dT_1 / dz$, fluctuations in the temperature profile's gradients.  The background values
-($M_0$, $\rho_0$, $T_0$, $dT_0/dz$) should all be set by a combination of the
-initial conductive reference state, and the evolved time- and horizontally- averaged profiles from the
-IVP.
-
-The boundary conditions are:
+\subsection{Momentum equation}
+There's really two parts of the momentum equation: the part that we normally think of
+as hydrostatic balance, and the velocity parts.  Let's look at the former, first. We have
+\begin{equation}
+\frac{d\bar{P}}{dz} + \overline{\rho g} = \frac{d}{dz}\left( \overline{\rho T}\right) + \overline{\rho g}
+= \overline{T d_z \rho + \rho d_z T} + \overline{\rho g}
+\end{equation}
+Temperature and density are broken up such that
+\begin{equation}
+T \equiv T_0 + T_{IVP} + T_1; \qquad \rho \equiv \rho_0 + \rho_{IVP} + \rho_1.
+\end{equation}
+Here, $T_{IVP}$ is just the temperature fluctuations from the IVP, and $\rho_{IVP} = \rho_0 (e^{\ln\rho_1} - 1)$
+of the IVP.  The ``subscript 1'' variables here are the fluctuations that will be solved for in the BVP.  With
+that in mind, my previous HS balance equation is:
+\begin{equation}
+\overline{T d_z \rho + \rho d_z T} + \overline{\rho g} =
+\overline{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1) + (\rho_0 + \rho_{IVP} + \rho_1)d_z(T \equiv T_0 + T_{IVP} + T_1)
++ (\rho_0 + \rho_{IVP} + \rho_1)g}
+\end{equation}
+And at this point, we're too long for one line, so
 \begin{equation}
 \begin{split}
-M_1(z=0) &= 0 \\
-M_1(z=L_z) &= 0 \\
-T_1(z=L_z) &= 0 \\
-\frac{dT_1}{dz}(z=0) &= 0.
+&\overline{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1)} = 
+		\overline{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})} + \overline{(T_0 + T_{IVP})}d_z(\rho_1)
+		+ T_1\overline{d_z(\rho_0 + \rho_{IVP})} + T_1 d_z(\rho_1) \\
+&\overline{(\rho_0 + \rho_{IVP} + \rho_1)d_z(T_0 + T_{IVP} + T_1)} =
+		\overline{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})} + \overline{(\rho_0 + \rho_{IVP})d_z(T_1)}
+		+ \rho_1\overline{d_z(T_0 + T_{IVP})} + \rho_1 d_z(T_1) \\
+&\overline{(\rho_0 + \rho_{IVP} + \rho_1)g} = \overline{(\rho_0 + \rho_{IVP})}g + \rho_1 g,
 \end{split}
 \end{equation}
+where in the RHS expressions I have taken $\rho_1$ and $T_1$ out of the bars, because they are
+definitionally vertical profiles with no time- or horizontal- variance.  All of the yucky terms which have
+bars over them are terms that I should \emph{directly find a time- and horizontal- average of} if I want
+to have precisely the right BVP.  
+
+The rest of the momentum equation is fairly easy:
+\begin{equation}
+\overline{\rho\bm{u}\cdot\grad w - \Div{\stressT}_z} =
+\overline{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w} + \rho_1\overline{\bm{u}\cdot\grad w}
+- \overline{\Div{\stressT}_z}.
+\end{equation}
+Here, the stress tensor term depends only on velocity and $\kappa$, and since I am solving systems with constant
+$\kappa$, I don't need to worry about breaking it up any more.  That means that I need the
+following profiles going into my BVP for the momentum equation:
+\begin{enumerate}
+\item \texttt{T0\_full =}		 $\overline{(T_0 + T_{IVP})}$
+\item \texttt{T0\_z\_full =}		 $\overline{d_z(T_0 + T_{IVP})}$
+\item \texttt{rho0\_full =}		 $\overline{(\rho_0 + \rho_{IVP})}$
+\item \texttt{rho0\_z\_full =}	 $\overline{d_z(\rho_0 + \rho_{IVP})}$
+\item \texttt{T\_grad\_rho =}		 $\overline{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})}$
+\item \texttt{rho\_grad\_T =}      $\overline{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})}$
+\item \texttt{rho\_uDotGradw =}   $\overline{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w}$
+\item \texttt{uDotGradw =}       $\overline{\bm{u}\cdot\grad w}$
+\item \texttt{visc\_w =}         $\overline{\Div{\stressT}_z}$
+\end{enumerate}
+
+\subsection{Energy Equation}
+So this equation is $\Div{\text{fluxes}} = \kappa IH$.  The RHS is already just a constant of
+the system (or a constant profile in time if we want to add that complexity later).  The LHS
+needs some love.  Let's examine each flux individually.
+\begin{equation}
+\overline{\text{conductive flux}} = \overline{- \kappa \grad(T_0 + T_{IVP} + T_1)}
+= -\kappa (\overline{\grad(T_0 + T_{IVP})} + \grad T_1),
+\end{equation}
+so...yeah, that one's super simple for the constant kappa case.
+\begin{equation}
+\overline{\text{viscous flux}} = \overline{(\bm{u}\cdot\stressT)_w},
+\end{equation}
+and I might be off by a negative sign here (should check, but I think I'm not).  This is just a
+function of $\kappa$ and $\bm{u}$, so once again...here, we have it easy.
+\begin{equation}
+\overline{\text{KE flux}} = \overline{\rho w (\bm{u})^2 / 2}
+= \overline{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2} + \rho_1 \overline{w (\bm{u})^2/2},
+\end{equation}
+which is slightly more rough, but not bad.  Then there's
+\begin{equation}
+\overline{\text{enthalpy flux}} = \overline{\rho w T (C_v + 1)}
+= (C_v + 1)\left(\overline{(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}
++ \overline{(\rho_0 + \rho_{IVP}) w} T_1 + \rho_1\overline{w (T_0 + T_{IVP})}
++ \rho_1 T_1 \overline{w}
+\right)
+\end{equation}
+and we're ignoring PE flux, by choice.
+
+So in the end, this energy equation requires the following \emph{new} things that we didn't have
+from the momentum equation
+\begin{enumerate}
+\item \texttt{visc\_flux =} 		$\overline{(\bm{u}\cdot\stressT)_w}$
+\item \texttt{KE\_flux\_IVP =}		$\overline{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2}$
+\item \texttt{w\_vel\_squared =}	$\overline{w (\bm{u})^2 / 2}$
+\item \texttt{Enth\_flux\_IVP =}	$\overline{(C_v + 1)(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}$
+\item \texttt{rho\_w\_IVP =}		$\overline{(\rho_0 + \rho_{IVP})w}$
+\item \texttt{T\_w\_IVP =}		    $\overline{(T_0 + T_{IVP}) w}$
+\item \texttt{w\_IVP =}				$\overline{w}$
+\end{enumerate}
+
+
+
+
+\subsection{Implementation in Dedalus}
+With the substitutions from the above sections, my four equations that I implement in dedalus are
+\begin{enumerate}
+\item \texttt{dz(M1) - rho1 = 0}
+\item \texttt{dz(T1) - T1\_z = 0}
+\item \texttt{dz(}$-\kappa$\texttt{T1\_z + rho1 * (w\_vel\_squared + T\_w\_IVP) + T1 * rho\_w\_IVP) =} \\
+	  \texttt{-dz(}$-\kappa$\texttt{T0\_z\_full + visc\_flux + KE\_flux\_IVP + Enth\_flux\_IVP + (Cv+1)*rho1*T1*w\_IVP) +} $\kappa$\texttt{(IH)}
+\item \texttt{T0\_full*dz(rho1) + T1*rho0\_z\_full + rho0\_full*dz(T1) + rho1 * T0\_z\_full + rho1 g + rho1 * uDotGradw} \\
+	  \texttt{= -T\_grad\_rho - T1*dz(rho1) - rho\_grad\_T - rho1*dz(T1) - rho0\_full * g - rho\_uDotGradw - visc\_w }
+\end{enumerate}
+The boundary conditions of this system are then
+\begin{enumerate}
+\item \texttt{left(M1) = 0}
+\item \texttt{right(M1) = 0}
+\item \texttt{left(T1\_z) = 0}
+\item \texttt{right(T1) = 0}
+\end{enumerate}
 The last two of these conditions are just the standard thermal boundary conditions used in these
 simulations.  The first two conditions ensure that no mass is added to the system.  The structure of
 the dz(fluxes) = IH equation ensures that flux equilibrium is met throughout the atmosphere, and the

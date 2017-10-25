@@ -8,6 +8,7 @@ syntax: glob
 *.out
 *.pyc
 *.mp4
+*s*.h5
 low_S_mach_scripts/*
 *.o*
 run_scripts/*
