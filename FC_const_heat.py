@@ -2,9 +2,9 @@
 Dedalus script for 2D or 3D compressible convection in a stratified atmosphere
 with a constant heating term in the internal energy equation.  The user
 specifies the number of density scale heights of the convective zone, and then
-another parameter, f, which determines how much of the domain the convection
-zone spans, geometrically.  If f = 0, the CZ is the full domain.  If f = 1, 
-the CZ does not exist.
+another parameter, r, which determines how deep the radiative zone is, geometrically,
+in units of the depth of the convection zone.  If r = 0, the CZ is the full domain.
+If r = 1, it's half and half.  If r = infinity, it's all RZ.
 
 Usage:
     FC_const_heat.py [options] 
@@ -83,6 +83,10 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
                  verbose=False, do_bvp=False, bvp_time=20, num_bvps=1, bvp_equil_time=20):
+    """
+    This is a super abusively long function that acts as the driver for IVP simulations of
+    simple, internally heated, fully compressible, stratified convection.
+    """
 
     import dedalus.public as de
     from dedalus.tools  import post
@@ -100,6 +104,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
 
     logger.info("Starting Dedalus script {:s}".format(sys.argv[0]))
 
+    #Set nx, ny if necessary.
     if nx is None:
         nx = int(np.round(nz*aspect_ratio))
     if threeD and ny is None:
@@ -118,18 +123,19 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         atmosphere = const_heat.FC_ConstHeating_2d(nx=nx, nz=nz, constant_kappa=const_kappa, constant_mu=const_mu,\
                                     epsilon=epsilon, gamma=gamma, n_rho_cz=n_rho_cz, aspect_ratio=aspect_ratio,\
                                     r=r, fig_dir=data_dir)
+    # Only reserve power in NCCs to a resonable degree of precision
     if epsilon < 1e-4:
         ncc_cutoff = 1e-14
-    elif epsilon > 1e-1:
-        ncc_cutoff = 1e-6
     else:
         ncc_cutoff = 1e-10
-        
+
+    # Set as an IVP problem, with rotational parameters for 3D cases
     if threeD:
         atmosphere.set_IVP_problem(Rayleigh, Prandtl, Taylor=Taylor, theta=theta, ncc_cutoff=ncc_cutoff, split_diffusivities=split_diffusivities)
     else:
         atmosphere.set_IVP_problem(Rayleigh, Prandtl, ncc_cutoff=ncc_cutoff, split_diffusivities=split_diffusivities)
     
+    # Set boundary conditions
     if fixed_flux:
         atmosphere.set_BC(fixed_flux=True, stress_free=True)
     elif fixed_T:
@@ -137,8 +143,8 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
     else:
         atmosphere.set_BC(mixed_flux_temperature=True, stress_free=True)
 
+    # Get dedalus problem, set up disk space for it.
     problem = atmosphere.get_problem()
-
     if atmosphere.domain.distributor.rank == 0:
         if not os.path.exists('{:s}/'.format(data_dir)):
             os.mkdir('{:s}/'.format(data_dir))
@@ -246,7 +252,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 bvp_solver.update_avgs(dt, min_Re=1e0)
                 if bvp_solver.check_if_solve():
                     bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
-                                            n_rho=n_rho_cz, r=r, nz=nz*2, use_therm=True  )
+                                            n_rho=n_rho_cz, r=r, nz=nz)
 
             # update lists
             if effective_iter % report_cadence == 0:

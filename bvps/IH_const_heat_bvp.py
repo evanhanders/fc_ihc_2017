@@ -62,8 +62,7 @@ class IH_BVP_solver:
                             ('EF_IVP',              'h_flux_z'), 
                             ('VF_IVP',              'viscous_flux_z'), 
                             ('KEF_IVP',             'KE_flux_z'),
-                            ('L_visc',              'L_visc_w'), 
-                            ('R_visc',              'R_visc_w'), 
+                            ('visc_IVP',            '(rho_full*(R_visc_w + L_visc_w))'), 
                             ('UdotGrad_w',          'UdotGrad(w, w_z)'), 
                             ('rho_UdotGrad_w',      '(rho_full * UdotGrad(w, w_z))'), 
                             ('KEF_norho',           '(w*(vel_rms**2)/2)'), 
@@ -252,8 +251,6 @@ class IH_BVP_solver:
             atmosphere.problem.substitutions['L_HSB'] = '(L_rho_gradT + L_T_gradrho + rho1*g)'
             atmosphere.problem.substitutions['R_HSB'] = '(R_rho_gradT + R_T_gradrho + rho0_tot*g)'
 
-            atmosphere.problem.substitutions['visc_w'] = '(L_visc + R_visc)'
-
             logger.debug('setting T1_z eqn')
             atmosphere.problem.add_equation("dz(T1) - T1_z = 0")
 
@@ -264,8 +261,8 @@ class IH_BVP_solver:
             atmosphere.problem.add_equation(("dz(flux_L) = -dz(flux_R) + κ*IH"))
 
             logger.debug("Setting modified hydrostatic equilibrium")
-            atmosphere.problem.add_equation((" rho1 * UdotGrad_w + L_HSB - rho1*visc_w = "
-                                             " - R_HSB + rho0_tot*visc_w - rho_UdotGrad_w"))
+            atmosphere.problem.add_equation((" rho1 * UdotGrad_w + L_HSB = "
+                                             " - R_HSB + visc_IVP - rho_UdotGrad_w"))
 
             # Use thermal BCs from IVP
             atmosphere.problem.add_bc("left(T1_z) = 0") 
