@@ -62,6 +62,7 @@ class IH_BVP_solver:
                             ('EF_IVP',              'h_flux_z'), 
                             ('VF_IVP',              'viscous_flux_z'), 
                             ('KEF_IVP',             'KE_flux_z'),
+                            ('PEF_IVP',             'PE_flux_z'),
                             ('visc_IVP',            '(rho_full*(R_visc_w + L_visc_w))'), 
                             ('UdotGrad_w',          'UdotGrad(w, w_z)'), 
                             ('rho_UdotGrad_w',      '(rho_full * UdotGrad(w, w_z))'), 
@@ -229,14 +230,17 @@ class IH_BVP_solver:
             # KE flux = w * (vel_rms)^2 / 2
             atmosphere.problem.substitutions['KE_flux_L']   = '( rho1 * KEF_norho )'
             atmosphere.problem.substitutions['KE_flux_R']   = '( KEF_IVP )'
+            # PE flux = w * rho * phi
+            atmosphere.problem.substitutions['PE_flux_L']   = '( rho1 * w_IVP * phi )'
+            atmosphere.problem.substitutions['PE_flux_R']   = '( PEF_IVP )'
             # Viscous flux -- double check
             atmosphere.problem.substitutions['visc_flux_R'] = '(VF_IVP)'
             # Conductive flux
             atmosphere.problem.substitutions['kappa_flux_L'] = '(-(κ) * T1_z)' 
             atmosphere.problem.substitutions['kappa_flux_R'] = '(-(κ) * T0_z_tot)' 
 
-            atmosphere.problem.substitutions['flux_L'] = '(kappa_flux_L + enth_flux_L + KE_flux_L)'
-            atmosphere.problem.substitutions['flux_R'] = '(kappa_flux_R + enth_flux_R + KE_flux_R + visc_flux_R)'
+            atmosphere.problem.substitutions['flux_L'] = '(kappa_flux_L + enth_flux_L + KE_flux_L + PE_flux_L)'
+            atmosphere.problem.substitutions['flux_R'] = '(kappa_flux_R + enth_flux_R + KE_flux_R + PE_flux_R + visc_flux_R)'
 
 
             #### Modified hydrostatic balance substitutions
@@ -276,7 +280,7 @@ class IH_BVP_solver:
             # Solve the BVP
             solver = atmosphere.problem.build_solver()
 
-            tolerance=1e-3*epsilon
+            tolerance=1e-9*epsilon
             pert = solver.perturbations.data
             pert.fill(1+tolerance)
             while np.sum(np.abs(pert)) > tolerance:
@@ -290,31 +294,20 @@ class IH_BVP_solver:
         # Create space for the returned profiles on all processes.
         return_dict = dict()
         for v in IH_BVP_solver.VARS.keys():
-            return_dict[v] = np.zeros(self.nz)
+            return_dict[v] = np.zeros(self.nz, dtype=np.float64)
 
         if self.rank == 0:
             #Appropriately adjust T1 in IVP
-            f = atmosphere._new_ncc()
-            T1.set_scales(1, keep_data=True)
-            f['g'] = T1['g']
-            f.set_scales(self.nz/nz, keep_data=True)
-            return_dict['T1_IVP'] = f['g'] + self.profiles_dict['T1_IVP']
+            T1.set_scales(self.nz/nz, keep_data=True)
+            return_dict['T1_IVP'] = T1['g']
 
             #Appropriately adjust T1_z in IVP
-            f.set_scales(1, keep_data=False)
-            T1_z.set_scales(1, keep_data=True)
-            f['g'] = T1_z['g']
-            f.set_scales(self.nz/nz, keep_data=True)
-            return_dict['T1_z_IVP'] = f['g'] + self.profiles_dict['T1_z_IVP']
+            T1_z.set_scales(self.nz/nz, keep_data=True)
+            return_dict['T1_z_IVP'] = T1_z['g']
 
             #Appropriately adjust ln_rho1 in IVP
-            f.set_scales(self.nz/nz, keep_data=False)
             rho1.set_scales(self.nz/nz, keep_data=True)
-            atmosphere.rho0.set_scales(self.nz/nz, keep_data=True)
-            f['g'] = atmosphere.rho0['g']*(np.exp(self.profiles_dict['ln_rho1_IVP'])) + rho1['g']
-            f['g'] = np.log(f['g']) - np.log(atmosphere.rho0['g'])
-            f.set_scales(self.nz/nz, keep_data=True)
-            return_dict['ln_rho1_IVP'] = f['g']
+            return_dict['ln_rho1_IVP'] = np.log(1 + rho1['g']/self.profiles_dict['rho_full_IVP'])
     
 #            Plot out evolved profiles from BVP (debugging)
 #            for k in return_dict.keys():
@@ -324,7 +317,7 @@ class IH_BVP_solver:
 #                plt.plot(f['g'], return_dict[k] - self.profiles_dict[k])
 #                plt.savefig('{}_plot.png'.format(k))
 #                plt.close()
-#        
+            print(return_dict)
         self.comm.Barrier()
         # Communicate output profiles from proc 0 to all others.
         if self.size > 1:
@@ -336,7 +329,7 @@ class IH_BVP_solver:
         # Actually update IVP states
         for v in IH_BVP_solver.VARS.keys():
             self.solver_states[v].set_scales(1, keep_data=True)
-            self.solver_states[v]['g'] += (return_dict[v] - self.profiles_dict[v])[self.n_per_proc*self.rank:self.n_per_proc*(self.rank+1)]
+            self.solver_states[v]['g'] += return_dict[v][self.n_per_proc*self.rank:self.n_per_proc*(self.rank+1)]
 
         # Reset profile arrays for getting the next bvp average
         for fd in IH_BVP_solver.FIELDS.keys():
