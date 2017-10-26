@@ -63,6 +63,7 @@ Options:
     --num_bvps=<num>                     Maximum number of BVPs to do [default: 1]
     --bvp_time=<time>                    How often to do a bvp, in tbuoy [default: 20]
     --bvp_equil_time=<time>              How long to wait after a previous BVP before starting to average for next one, in tbuoy [default: 20]
+    --bvp_resolution_factor=<mult>       an int, how many times larger than nz should the bvp nz be? [default: 1]
 """
 import logging
 
@@ -82,7 +83,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                  rk222=False, safety_factor=0.2,
                  max_writes=20,
                  data_dir='./', out_cadence=0.1, no_coeffs=False, no_volumes=False, no_join=False,
-                 verbose=False, do_bvp=False, bvp_time=20, num_bvps=1, bvp_equil_time=20):
+                 verbose=False, do_bvp=False, bvp_time=20, num_bvps=1, bvp_equil_time=20, bvp_resolution_factor=1):
     """
     This is a super abusively long function that acts as the driver for IVP simulations of
     simple, internally heated, fully compressible, stratified convection.
@@ -252,7 +253,7 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
                 bvp_solver.update_avgs(dt, min_Re=1e0)
                 if bvp_solver.check_if_solve():
                     bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
-                                            n_rho=n_rho_cz, r=r, nz=nz)
+                                            n_rho=n_rho_cz, r=r, nz=nz*bvp_resolution_factor)
 
             # update lists
             if effective_iter % report_cadence == 0:
@@ -529,4 +530,5 @@ if __name__ == "__main__":
                  do_bvp=args['--do_bvp'],
                  bvp_time=float(args['--bvp_time']),
                  num_bvps=int(args['--num_bvps']),
-                 bvp_equil_time=float(args['--bvp_equil_time']))
+                 bvp_equil_time=float(args['--bvp_equil_time']),
+                 bvp_resolution_factor=int(args['--bvp_resolution_factor']))
