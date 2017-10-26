@@ -30,111 +30,84 @@
 \newcommand\mnras{{MNRAS}}%
 
 \begin{document}
-\author{Evan H. Anders}
-\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
-\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
-\author{Benjamin P. Brown}
-\affiliation{Dept. Astrophysical \& Planetary Sciences, University of Colorado -- Boulder, Boulder, CO 80309, USA}
-\affiliation{Laboratory for Atmospheric and Space Physics, Boulder, CO 80303, USA}
 \title{BVPs to assist in convergence of IH atmospheres}
-
-\begin{abstract}
-An abstract will go here eventually
-\end{abstract}
 \maketitle
 
+\section{The FC Boundary value equations}
+These equations are motivated by stellar structure models (see \ref{sec:stellar_models}).
+One important thing that stellar structure models get right is that they know how to
+conserve mass in a 1D BVP, so that aspect of these equations is basically stolen right
+from them.  We're dealing with systems where we \emph{know what the flux profile should
+look in the equilibrated state} a priori, so we can tap into that knowledge.  We use
+a modified hydrostatic equlibrium which accounts for advective and viscous pressure
+support, and we also don't use a MLT model for how the temperature gradient evolves.
+Rather, we solve for that using the full fluxes.
 
-\section{Stellar structure models}
-So in the spirit of Steve's stellar structures class (and from his notes found online,
-\url{http://lasp.colorado.edu/~cranmer/ASTR_5700_2016/index.html}) I am going to
-draw inspiration from stellar structure models to solve BVPs which make the thermal state of my
-solutions converge more rapidly.
-
-Stellar structure models essentially have five equations:
+So, that being said, our system of five equations (to parallel the system of 
+five equations you have to solve in structure models) becomes
 \begin{equation}
 \begin{split}
-\frac{d M_r}{dr} &= 4\pi r^2 \rho \qquad \text{(mass conservation)} \\
-\frac{d P}{dr} &= -\frac{G M_r}{r^2}\rho \qquad \text{(Hydrostatic balance)} \\
-\frac{d L_r}{dr} &= 4\pi r^2 \rho \epsilon \qquad \text{(Conservation of energy)} \\
-\frac{d T}{dr} &= \begin{cases}
-\left(\frac{dT}{dr}\right)_{\text{rad}} & \text{, if convectively stable}\\
-\left(\frac{dT}{dr}\right)_{\text{ad}} - \Delta\grad T & \text{, if convectively unstable}\\
-\end{cases} \qquad \text{(Basically where all of the model-dependent stuff comes in)} \\
-P &= P(\rho, T, \mu)  \qquad \text{(equation of state)}
+\angles{\frac{d M}{dz}} &= \angles{\rho} \\
+\angles{\frac{d P}{dz}} &= \angles{-\rho g \hat{z} - \rho (\bm{u}\cdot\grad)w - \Div{\stressT}_z} \\
+\angles{\frac{d (\text{Fluxes}_z)}{d z}} &= \angles{\kappa \text{(IH)}} \\
+\angles{T_{z}} &= \angles{\frac{d T}{d z}} \\
+\angles{P} &= \angles{\rho T},
 \end{split}
 \end{equation}
-where $\epsilon$ is the energy generation rate (erg / g / s), and $\mu$ is the
-mean atomic weight, or something of the sort.
+Here, $\angles{A} = \iiint A \,dx\,dy\,dt / (L_x\cdot L_y \cdot T)$ is the time- and horizontal-
+average of the quantity $A$, where $T$ is the quantity of time over which we're time-averaging,
+and ``angles'' should commute with $z$-derivatives.
+All subscript $z$ quantities mean that we are only examining the z-component of the full vector.
+In these equations, the viscous stress tensor is defined as
+\begin{equation}
+\Pi_{ij} \equiv -\mu\left(\frac{\partial u_i}{\partial x_j} + \frac{\partial u_j}{\partial x_i} -
+- \frac{2}{3}\delta_{ij}\Div{\bm{u}}\right).
+\label{eqn:stress_tensor}
+\end{equation}
 
-Basically, you have to solve a boundary value problem in order to find out more about the
-problem.  In general, in stellar structure models, there are technically six variables,
+So the important thing is to come up with a proper model for which fluxes carry the convection.
+In general, we don't want to neglect anything, but we also know that \emph{potential energy
+flux is usually associated with a transient state} and restratification of the atmosphere.
+Thus, I impose that
+\begin{equation}
+\angles{\rho w \phi} = 0,
+\end{equation}
+and we will ignore that flux from here on out.  Under that assumption, we still have to
+worry about the conductive flux, enthalpy flux, viscous flux, and KE flux.  Or, in
+equation form,
+\begin{equation}
+\angles{\text{Fluxes}_z} = \angles{\rho w \left(c_V T + \frac{P}{\rho}\right)}
++ \angles{\rho w \frac{|\bm{u}|^2}{2}} + \angles{-\kappa \frac{d T}{dz}}
++ \angles{(\bm{u}\cdot\stressT)_z}
+\end{equation}
+...and that's the system!  It's important for me to note at this point that the
+variables that I solve for in the BVPs are $T$, $dT/dz$, and $\rho$ (and $M$).
+In other words, I solve for the \emph{thermodynamic structure} of the atmosphere
+that is in flux equilibrium and is \emph{no longer evolving} (no PE flux) given the
+current velocity field fed in from an IVP.  
+
+Once we plug the EOS into the other equations,
+we're left with four equations in our systems.  The boundary conditions I will specify are:
 \begin{enumerate}
-\item Position: $r = [0, R_*]$
-\item Mass: $M_r = [0, M_*]$
-\item Mass density: $\rho = [\rho_c, \rho_{photo}]$
-\item Pressure: $P = [P_c, P_{photo}]$
-\item Temperature: $T = [T_c, T_{eff}]$
-\item Luminosity: $L_r = [0, L_*]$
+\item left(M) = 0, right(M) = integrated mass of initial atmosphere.  The BVP is
+not allowed to add mass to the problem.  This is two boundary conditions.
+\item right($T_1$) = 0, fixed temperature top boundary, just like in my IVP.
+\item left($dz(T_1)$) = 0, fixed flux bottom boundary, which specifies exactly the shape
+that the full flux profile will take (and the full amount of flux at any point in the
+system).
 \end{enumerate}
-Generally, in stellar structure models, we're interested in 6 things:
-$R_*, M_*, \rho_c, P_c, T_c, L_*$.  That's six variables for five equations,
-so usually $M_*$ is specified and then the rest are determined based on a boundary value problem.
 
-...that's basically what we want to do in our problems.
+It's also important for me to say that these equations work well for constant values
+of $\kappa$ and $\mu$ (in both time and space).  I haven't thought about the problem
+for variable $\kappa$/$\mu$, and while it will still work, it will be more complicated.
 
-\section{Our Equations}
-We don't have a spherical star, we have a cartesian box.  So all of the $4\pi r^2$ area
-elements turn into $xy$.  When we take a horizontal average over our simulaton, $x$ and $y$
-drop out of the problem completely.  So for the 1D, $z$-direction boundary value problem that
-we actually want to solve, our equations are
-\begin{equation}
-\begin{split}
-\frac{d M}{dz} &= \rho \\
-\frac{d P}{dz} &= -\rho g \hat{z} - \rho \bm{u}\cdot\grad\bm{u} - \Div{\stressT} \\
-\frac{d (\text{Fluxes})}{d z} &= \kappa \text{(IH)} \\
-T_{z} &= \frac{d T}{d z} \\
-P = \rho T,
-\end{split}
-\end{equation}
-where the second and third equations are the real kickers here.  In fact, the third equation is a combination
-of the 3rd and 4th equation from a stellar structure model: it is conservation of energy, and it includes
-all of the assumptions that we're putting into the model.
 
-In a steady state, potential energy flux is basically zero (because the atmosphere is no longer settling).
-At least, this is true for the low mach number case.  Thus, when we consider all of the fluxes in our problem,
-we only need to consider enthalpy flux, KE flux, viscous flux, and conductive flux.  Thus, the third equation
-above has the form
-\begin{equation}
-\frac{d}{dz}\left(-\kappa T_z + \rho w \left[\frac{|\bm{u}|^2}{2} + 
-\left(c_V T + \frac{P}{\rho}\right)\right] + \bm{u}\cdot\stressT  \right) = \kappa \text{(IH)},
-\end{equation}
-where the terms are, in order, the conductive flux, the KE flux, the enthalpy flux, and the viscous flux.  The
-RHS has the internal heating.
-
-Technically, I'm dealing with a 1D problem which knows horizontal averages of an evolved 2- or 3- dimensional
-convective solution.  I will use $\overline{A}$ to represent the horizontal- and time- average of a quantity
-from the IVP.  Using this notation, my full set of equations to solve is
-\begin{equation}
-\begin{split}
-\frac{d M}{dz} &= \rho \\
-\overline{\frac{d P}{dz}} &= \overline{-\rho g \hat{z} - \rho \bm{u}\cdot\grad\bm{u} - \Div{\stressT}} \\
-\overline{\frac{d}{dz}\left(-\kappa T_z + \rho w\left[\frac{|\bm{u}|^2}{2} + 
-\left(c_V T + \frac{P}{\rho}\right)\right] + \bm{u}\cdot\stressT  \right)} &= \overline{\kappa \text{(IH)}}, \\
-T_z &= \frac{dT}{dz} \\
-P &= \rho T,
-\end{split}
-\end{equation}
-Here, $\overline{A} = \iiint A \,dx \,dy \,dt / (L_y\cdot L_x\cdot T)$ is the time- and horizontally-
-averaged profile of the variable $A$, where $T$ is the time interval over which an average is taken.
-Fortunately, $d/dz$ commutes with this operation, so we can just put it inside of any z-derivatives
-and we should be fine.  Let's break things up really carefully.
-
-\subsection{Momentum equation}
+\subsection{Implementing the Momentum equation}
 There's really two parts of the momentum equation: the part that we normally think of
 as hydrostatic balance, and the velocity parts.  Let's look at the former, first. We have
 \begin{equation}
-\frac{d\bar{P}}{dz} + \overline{\rho g} = \frac{d}{dz}\left( \overline{\rho T}\right) + \overline{\rho g}
-= \overline{T d_z \rho + \rho d_z T} + \overline{\rho g}
+\angles{\frac{dP}{dz}} + \angles{\rho g} = \angles{\frac{d}{dz}\left( \rho T\right) } + \angles{\rho g}
+= \angles{T d_z \rho + \rho d_z T} + \angles{\rho g}
 \end{equation}
 Temperature and density are broken up such that
 \begin{equation}
@@ -144,46 +117,47 @@ Here, $T_{IVP}$ is just the temperature fluctuations from the IVP, and $\rho_{IV
 of the IVP.  The ``subscript 1'' variables here are the fluctuations that will be solved for in the BVP.  With
 that in mind, my previous HS balance equation is:
 \begin{equation}
-\overline{T d_z \rho + \rho d_z T} + \overline{\rho g} =
-\overline{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1) + (\rho_0 + \rho_{IVP} + \rho_1)d_z(T \equiv T_0 + T_{IVP} + T_1)
+\angles{T d_z \rho + \rho d_z T} + \angles{\rho g} =
+\angles{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1) + (\rho_0 + \rho_{IVP} + \rho_1)d_z(T_0 + T_{IVP} + T_1)
 + (\rho_0 + \rho_{IVP} + \rho_1)g}
 \end{equation}
 And at this point, we're too long for one line, so
 \begin{equation}
 \begin{split}
-&\overline{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1)} = 
-		\overline{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})} + \overline{(T_0 + T_{IVP})}d_z(\rho_1)
-		+ T_1\overline{d_z(\rho_0 + \rho_{IVP})} + T_1 d_z(\rho_1) \\
-&\overline{(\rho_0 + \rho_{IVP} + \rho_1)d_z(T_0 + T_{IVP} + T_1)} =
-		\overline{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})} + \overline{(\rho_0 + \rho_{IVP})d_z(T_1)}
-		+ \rho_1\overline{d_z(T_0 + T_{IVP})} + \rho_1 d_z(T_1) \\
-&\overline{(\rho_0 + \rho_{IVP} + \rho_1)g} = \overline{(\rho_0 + \rho_{IVP})}g + \rho_1 g,
+&\angles{(T_0 + T_{IVP} + T_1) d_z(\rho_0 + \rho_{IVP} + \rho_1)} = 
+		\angles{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})} + \angles{(T_0 + T_{IVP})}d_z(\rho_1)
+		+ T_1\angles{d_z(\rho_0 + \rho_{IVP})} + T_1 d_z(\rho_1) \\
+&\angles{(\rho_0 + \rho_{IVP} + \rho_1)d_z(T_0 + T_{IVP} + T_1)} =
+		\angles{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})} + \angles{(\rho_0 + \rho_{IVP})}d_z(T_1)
+		+ \rho_1\angles{d_z(T_0 + T_{IVP})} + \rho_1 d_z(T_1) \\
+&\angles{(\rho_0 + \rho_{IVP} + \rho_1)g} = \angles{(\rho_0 + \rho_{IVP})}g + \rho_1 g,
 \end{split}
 \end{equation}
-where in the RHS expressions I have taken $\rho_1$ and $T_1$ out of the bars, because they are
-definitionally vertical profiles with no time- or horizontal- variance.  All of the yucky terms which have
-bars over them are terms that I should \emph{directly find a time- and horizontal- average of} if I want
+where in the RHS expressions I have taken $\rho_1$ and $T_1$ out of the angles, because they are
+definitionally vertical profiles with no time- or horizontal- variance (that's what it means
+for them to be the solution to the BVP).  All of the yucky terms which have
+angles around them are terms that I should \emph{directly find a time- and horizontal- average of} if I want
 to have precisely the right BVP.  
 
 The rest of the momentum equation is fairly easy:
 \begin{equation}
-\overline{\rho\bm{u}\cdot\grad w - \Div{\stressT}_z} =
-\overline{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w} + \rho_1\overline{\bm{u}\cdot\grad w}
-- \overline{\Div{\stressT}_z}.
+\angles{-\rho\bm{u}\cdot\grad w - \Div{\stressT}_z} =
+- \angles{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w} - \rho_1\angles{\bm{u}\cdot\grad w}
+- \angles{\Div{\stressT}_z}.
 \end{equation}
 Here, the stress tensor term depends only on velocity and $\kappa$, and since I am solving systems with constant
 $\kappa$, I don't need to worry about breaking it up any more.  That means that I need the
 following profiles going into my BVP for the momentum equation:
 \begin{enumerate}
-\item \texttt{T0\_full =}		 $\overline{(T_0 + T_{IVP})}$
-\item \texttt{T0\_z\_full =}		 $\overline{d_z(T_0 + T_{IVP})}$
-\item \texttt{rho0\_full =}		 $\overline{(\rho_0 + \rho_{IVP})}$
-\item \texttt{rho0\_z\_full =}	 $\overline{d_z(\rho_0 + \rho_{IVP})}$
-\item \texttt{T\_grad\_rho =}		 $\overline{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})}$
-\item \texttt{rho\_grad\_T =}      $\overline{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})}$
-\item \texttt{rho\_uDotGradw =}   $\overline{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w}$
-\item \texttt{uDotGradw =}       $\overline{\bm{u}\cdot\grad w}$
-\item \texttt{visc\_w =}         $\overline{\Div{\stressT}_z}$
+\item \texttt{T0\_full =}		 $\angles{(T_0 + T_{IVP})}$
+\item \texttt{T0\_z\_full =}		 $\angles{d_z(T_0 + T_{IVP})}$ (honestly, this should just be dz(above) )
+\item \texttt{rho0\_full =}		 $\angles{(\rho_0 + \rho_{IVP})}$
+\item \texttt{rho0\_z\_full =}	 $\angles{d_z(\rho_0 + \rho_{IVP})}$ (honestly, this should just be dz(above) )
+\item \texttt{T\_grad\_rho =}		 $\angles{(T_0 + T_{IVP})d_z(\rho_0 + \rho_{IVP})}$
+\item \texttt{rho\_grad\_T =}      $\angles{(\rho_0 + \rho_{IVP})d_z(T_0 + T_{IVP})}$
+\item \texttt{rho\_uDotGradw =}   $\angles{(\rho_0 + \rho_{IVP})\bm{u}\cdot\grad w}$
+\item \texttt{uDotGradw =}       $\angles{\bm{u}\cdot\grad w}$
+\item \texttt{visc\_w =}         $\angles{\Div{\stressT}_z}$
 \end{enumerate}
 
 \subsection{Energy Equation}
@@ -191,39 +165,38 @@ So this equation is $\Div{\text{fluxes}} = \kappa IH$.  The RHS is already just 
 the system (or a constant profile in time if we want to add that complexity later).  The LHS
 needs some love.  Let's examine each flux individually.
 \begin{equation}
-\overline{\text{conductive flux}} = \overline{- \kappa \grad(T_0 + T_{IVP} + T_1)}
-= -\kappa (\overline{\grad(T_0 + T_{IVP})} + \grad T_1),
+\angles{\text{conductive flux}} = \angles{- \kappa d_z(T_0 + T_{IVP} + T_1)}
+= -\kappa (\angles{d_z(T_0 + T_{IVP})} + d_z T_1),
 \end{equation}
 so...yeah, that one's super simple for the constant kappa case.
 \begin{equation}
-\overline{\text{viscous flux}} = \overline{(\bm{u}\cdot\stressT)_w},
+\angles{\text{viscous flux}} = \angles{(\bm{u}\cdot\stressT)_z},
 \end{equation}
-and I might be off by a negative sign here (should check, but I think I'm not).  This is just a
-function of $\kappa$ and $\bm{u}$, so once again...here, we have it easy.
+This is just a function of $\kappa$ and $\bm{u}$, so once again...here, we have it easy.
 \begin{equation}
-\overline{\text{KE flux}} = \overline{\rho w (\bm{u})^2 / 2}
-= \overline{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2} + \rho_1 \overline{w (\bm{u})^2/2},
+\angles{\text{KE flux}} = \angles{\rho w (\bm{u})^2 / 2}
+= \angles{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2} + \rho_1 \angles{w (\bm{u})^2/2},
 \end{equation}
 which is slightly more rough, but not bad.  Then there's
 \begin{equation}
-\overline{\text{enthalpy flux}} = \overline{\rho w T (C_v + 1)}
-= (C_v + 1)\left(\overline{(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}
-+ \overline{(\rho_0 + \rho_{IVP}) w} T_1 + \rho_1\overline{w (T_0 + T_{IVP})}
-+ \rho_1 T_1 \overline{w}
-\right)
+\angles{\text{enthalpy flux}} = \angles{\rho w T (C_v + 1)}
+= (C_v + 1)\left\{\angles{(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}
++ \angles{(\rho_0 + \rho_{IVP}) w} T_1 + \rho_1\angles{w (T_0 + T_{IVP})}
++ \rho_1 T_1 \angles{w}
+\right\}
 \end{equation}
 and we're ignoring PE flux, by choice.
 
 So in the end, this energy equation requires the following \emph{new} things that we didn't have
 from the momentum equation
 \begin{enumerate}
-\item \texttt{visc\_flux =} 		$\overline{(\bm{u}\cdot\stressT)_w}$
-\item \texttt{KE\_flux\_IVP =}		$\overline{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2}$
-\item \texttt{w\_vel\_squared =}	$\overline{w (\bm{u})^2 / 2}$
-\item \texttt{Enth\_flux\_IVP =}	$\overline{(C_v + 1)(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}$
-\item \texttt{rho\_w\_IVP =}		$\overline{(\rho_0 + \rho_{IVP})w}$
-\item \texttt{T\_w\_IVP =}		    $\overline{(T_0 + T_{IVP}) w}$
-\item \texttt{w\_IVP =}				$\overline{w}$
+\item \texttt{visc\_flux =} 		$\angles{(\bm{u}\cdot\stressT)_w}$
+\item \texttt{KE\_flux\_IVP =}		$\angles{(\rho_0 + \rho_{IVP}) w (\bm{u})^2 / 2}$
+\item \texttt{w\_vel\_squared =}	$\angles{w (\bm{u})^2 / 2}$
+\item \texttt{Enth\_flux\_IVP =}	$\angles{(C_v + 1)(\rho_0 + \rho_{IVP})(T_0 + T_{IVP}) w}$
+\item \texttt{rho\_w\_IVP =}		$\angles{(\rho_0 + \rho_{IVP})w}$
+\item \texttt{T\_w\_IVP =}		    $\angles{(T_0 + T_{IVP}) w}$
+\item \texttt{w\_IVP =}				$\angles{w}$
 \end{enumerate}
 
 
@@ -234,9 +207,9 @@ With the substitutions from the above sections, my four equations that I impleme
 \begin{enumerate}
 \item \texttt{dz(M1) - rho1 = 0}
 \item \texttt{dz(T1) - T1\_z = 0}
-\item \texttt{dz(}$-\kappa$\texttt{T1\_z + rho1 * (w\_vel\_squared + T\_w\_IVP*(Cv + 1)) + T1 * rho\_w\_IVP* (Cv + 1)) =} \\
-	  \texttt{-dz(}$-\kappa$\texttt{T0\_z\_full + visc\_flux + KE\_flux\_IVP + Enth\_flux\_IVP + (Cv+1)*rho1*T1*w\_IVP) +} $\kappa$\texttt{(IH)}
-\item \texttt{T0\_full*dz(rho1) + T1*rho0\_z\_full + rho0\_full*dz(T1) + rho1 * T0\_z\_full + rho1 g + rho1 * uDotGradw} \\
+\item \texttt{dz(}$-\kappa$\texttt{T1\_z + rho1 * (w\_vel\_squared + T\_w\_IVP * (Cv + 1)) + T1 * rho\_w\_IVP * (Cv + 1)) =} \\
+	  \texttt{-dz(}$-\kappa$\texttt{T0\_z\_full + visc\_flux + KE\_flux\_IVP + Enth\_flux\_IVP + (Cv+1) * rho1 * T1 * w\_IVP) +} $\kappa$\texttt{(IH)}
+\item \texttt{T0\_full*dz(rho1) + T1*rho0\_z\_full + rho0\_full*dz(T1) + rho1 * T0\_z\_full + rho1*g + rho1 * uDotGradw} \\
 	  \texttt{= -T\_grad\_rho - T1*dz(rho1) - rho\_grad\_T - rho1*dz(T1) - rho0\_full * g - rho\_uDotGradw - visc\_w }
 \end{enumerate}
 The boundary conditions of this system are then
@@ -251,7 +224,40 @@ simulations.  The first two conditions ensure that no mass is added to the syste
 the dz(fluxes) = IH equation ensures that flux equilibrium is met throughout the atmosphere, and the
 dz(P) equation ensures that there are no $m = 0$ pressure imbalances in the atmosphere.
 
-Sweetness.
+I'm having a bit of trouble finding what tolerance I should set in my BVP.  I was initially using
+$10^{-3}\epsilon$, but I'm finding that that doesn't converge things well enough.  I'm now
+using $10^{-10}\epsilon$, and that seems to be working better, but I haven't had the
+time to thoroughly test it.
+
+\section{Stellar structure models}
+This is where my motivation for the current system of equations lie.
+These equations are from Steve's stellar structures class (and from his notes found online,
+\url{http://lasp.colorado.edu/~cranmer/ASTR_5700_2016/index.html}) 
+Stellar structure models essentially have five equations:
+\begin{equation}
+\begin{split}
+\frac{d M_r}{dr} &= 4\pi r^2 \rho \qquad \text{(mass conservation)} \\
+\frac{d P}{dr} &= -\frac{G M_r}{r^2}\rho \qquad \text{(Hydrostatic balance)} \\
+\frac{d L_r}{dr} &= 4\pi r^2 \rho \epsilon \qquad \text{(Conservation of energy)} \\
+\frac{d T}{dr} &= \begin{cases}
+\left(\frac{dT}{dr}\right)_{\text{rad}} & \text{, if convectively stable}\\
+\left(\frac{dT}{dr}\right)_{\text{ad}} - \Delta\grad T & \text{, if convectively unstable}\\
+\end{cases} \qquad \text{(Basically where all of the model-dependent stuff comes in)} \\
+P &= P(\rho, T, \mu)  \qquad \text{(equation of state)}
+\end{split}
+\end{equation}
+where $\epsilon$ is the energy generation rate (erg / g / s), and $\mu$ is the
+mean atomic weight, or something of the sort.  In my above system of equations,
+I'm directly implementing three of these equations (mass conservation, hydrostatic
+balance, and EOS).  The other two equations (conservation of energy and the mixing
+length assumptions that go into $\Delta \grad T$) are combined in my energy equation
+in the following way:  I know what the ``luminosity'' of my atmosphere is because
+the internal heating term is ramping up the amount of flux being carried over the
+system.  This is something I know exactly ($\kappa$ IH).  Then, rather than making an assumption
+about how the temperature gradient should evolve, I just assume that the temperature field is the thing
+that gives me flux equilibrium in the presence of all of the other forcings.
+
+So....yeah, it's basically this type of system, but tailored to fit simpler atmospheres.
 
 
 \bibliography{../biblio.bib}
