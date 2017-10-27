@@ -48,6 +48,8 @@ class IH_BVP_solver:
         num_bvps            - Total number of BVPs to complete
         nz                  - z-resolution of the IVP grid
         profiles_dict       - a dictionary containing the time/horizontal average of FIELDS
+        profiles_dict_last  - a dictionary containing the time/horizontal average of FIELDS from the previous bvp
+        profiles_dict_curr  - a dictionary containing the time/horizontal average of FIELDS for current atmosphere state
         rank                - comm rank
         size                - comm size
         solver              - The corresponding dedalus IVP solver object
@@ -115,7 +117,7 @@ class IH_BVP_solver:
         self.n_per_proc     = self.nz/self.size
 
         # Set up tracking dictionaries for flow fields
-        self.profiles_dict = dict()
+        self.profiles_dict, self.profiles_dict_last, self.profiles_dict_curr = dict(), dict(), dict()
         self.solver_states = dict()
         for st in IH_BVP_solver.VARS.keys():
             self.solver_states[st] = self.solver.state[IH_BVP_solver.VARS[st]]
@@ -158,6 +160,9 @@ class IH_BVP_solver:
             return
 
         if self.flow.grid_average('Re') > min_Re:
+            if not self.avg_started:
+                self.avg_started=True
+                self.avg_time_start = self.solver.sim_time
             # Don't count point if a BVP has been completed very recently
             if (self.solver.sim_time - self.avg_time_start) < self.bvp_equil_time:
                 return
@@ -166,9 +171,8 @@ class IH_BVP_solver:
             self.avg_time_elapsed += dt
             for fd in IH_BVP_solver.FIELDS.keys():
                 self.profiles_dict[fd] += dt*self.get_full_profile(fd)
-            if not self.avg_started:
-                self.avg_started=True
-                self.avg_time_start = self.solver.sim_time
+#            if self.rank == 0:
+#                print(self.profiles_dict)
 
     def check_if_solve(self):
         """ Returns a boolean.  If True, it's time to solve a BVP """
@@ -186,6 +190,10 @@ class IH_BVP_solver:
         # Turn profiles from time-weighted sums into appropriate averages.
         for k in IH_BVP_solver.FIELDS.keys():
             self.profiles_dict[k] /= self.avg_time_elapsed
+            self.profiles_dict_curr[k] = self.profiles_dict[k]
+            if self.completed_bvps > 0:
+                self.profiles_dict[k] += self.profiles_dict_last[k]
+                self.profiles_dict[k] /= 2.
         # Restart counters for next BVP
         self.avg_time_elapsed   = 0.
         self.avg_time_start     = self.solver.sim_time
@@ -197,7 +205,8 @@ class IH_BVP_solver:
                                                      epsilon=epsilon, gamma=5./3, n_rho_cz=n_rho,
                                                      r=r, dimensions=1, comm=MPI.COMM_SELF)
             #Variables are T, dz(T), rho, integrated mass
-            atmosphere.problem = de.NLBVP(atmosphere.domain, variables=['T1', 'T1_z', 'rho1', 'M1'])
+            atmosphere.problem = de.NLBVP(atmosphere.domain, variables=['T1', 'T1_z', 'rho1', 'M1'],\
+                                            ncc_cutoff=epsilon*1e-9)
 
             #Zero out old varables to make atmospheric substitutions happy.
             old_vars = ['u', 'w', 'ln_rho1', 'v', 'u_z', 'w_z', 'v_z', 'dx(A)']
@@ -231,8 +240,8 @@ class IH_BVP_solver:
             atmosphere.problem.substitutions['KE_flux_L']   = '( rho1 * KEF_norho )'
             atmosphere.problem.substitutions['KE_flux_R']   = '( KEF_IVP )'
             # PE flux = w * rho * phi
-            atmosphere.problem.substitutions['PE_flux_L']   = '( rho1 * w_IVP * phi )'
-            atmosphere.problem.substitutions['PE_flux_R']   = '( PEF_IVP )'
+            atmosphere.problem.substitutions['PE_flux_L']   = '0'#( rho1 * w_IVP * phi )'
+            atmosphere.problem.substitutions['PE_flux_R']   = '0'#( PEF_IVP )'
             # Viscous flux -- double check
             atmosphere.problem.substitutions['visc_flux_R'] = '(VF_IVP)'
             # Conductive flux
@@ -299,15 +308,15 @@ class IH_BVP_solver:
         if self.rank == 0:
             #Appropriately adjust T1 in IVP
             T1.set_scales(self.nz/nz, keep_data=True)
-            return_dict['T1_IVP'] = T1['g']
+            return_dict['T1_IVP'] = T1['g'] + self.profiles_dict['T1_IVP'] - self.profiles_dict_curr['T1_IVP']
 
             #Appropriately adjust T1_z in IVP
             T1_z.set_scales(self.nz/nz, keep_data=True)
-            return_dict['T1_z_IVP'] = T1_z['g']
+            return_dict['T1_z_IVP'] = T1_z['g'] + self.profiles_dict['T1_z_IVP'] - self.profiles_dict_curr['T1_z_IVP']
 
             #Appropriately adjust ln_rho1 in IVP
             rho1.set_scales(self.nz/nz, keep_data=True)
-            return_dict['ln_rho1_IVP'] = np.log(1 + rho1['g']/self.profiles_dict['rho_full_IVP'])
+            return_dict['ln_rho1_IVP'] = np.log(1 + (rho1['g']+self.profiles_dict['rho_full_IVP']-self.profiles_dict_curr['rho_full_IVP'])/self.profiles_dict_curr['rho_full_IVP'])
     
 #            Plot out evolved profiles from BVP (debugging)
 #            for k in return_dict.keys():
@@ -333,4 +342,5 @@ class IH_BVP_solver:
 
         # Reset profile arrays for getting the next bvp average
         for fd in IH_BVP_solver.FIELDS.keys():
+            self.profiles_dict_last[fd] = self.profiles_dict[fd]
             self.profiles_dict[fd] = np.zeros(self.nz)
