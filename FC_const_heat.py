@@ -68,7 +68,7 @@ Options:
 import logging
 
 import numpy as np
-from bvps.IH_const_heat_bvp import IH_BVP_solver
+from bvps.bvp_tools import FC_BVP_solver
 from mpi4py import MPI
 
 def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
@@ -226,7 +226,10 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
         flow.add_property("Pe_rms", name='Pe')
         flow.add_property("Nusselt_AB17", name='Nusselt')
     if do_bvp:
-        bvp_solver = IH_BVP_solver(nz, flow, atmosphere.domain.dist.comm_cart, solver, bvp_time*atmosphere.buoyancy_time, num_bvps, bvp_equil_time*atmosphere.buoyancy_time)
+        bvp_solver = FC_BVP_solver(const_heat.FC_ConstHeating_2d_kappa_mu, nz, \
+                                   flow, atmosphere.domain.dist.comm_cart, \
+                                   solver, bvp_time*atmosphere.buoyancy_time, \
+                                   num_bvps, bvp_equil_time*atmosphere.buoyancy_time)
     
     start_iter=solver.iteration
     start_sim_time = solver.sim_time
@@ -252,8 +255,18 @@ def FC_const_heat(Rayleigh=1e4, Prandtl=1, aspect_ratio=4,
             if do_bvp:
                 bvp_solver.update_avgs(dt, min_Re=1e0)
                 if bvp_solver.check_if_solve():
-                    bvp_solver.solve_BVP(   Ra=Rayleigh, Pr=Prandtl, epsilon=epsilon,
-                                            n_rho=n_rho_cz, r=r, nz=nz*bvp_resolution_factor)
+                    atmo_kwargs = { 'constant_kappa' : const_kappa,
+                                    'constant_mu'    : const_mu,
+                                    'epsilon'        : epsilon,
+                                    'gamma'          : gamma,
+                                    'n_rho_cz'       : n_rho_cz,
+                                    'r'              : r,
+                                    'nz'             : nz*bvp_resolution_factor
+                                   }
+                    diff_kwargs = { 'Rayleigh'        : Rayleigh,
+                                    'Prandtl'         : Prandtl
+                                  }
+                    bvp_solver.solve_BVP(atmo_kwargs, diff_kwargs)
 
             # update lists
             if effective_iter % report_cadence == 0:

@@ -112,10 +112,16 @@ class Atmosphere:
         self.necessary_quantities['scale_energy'] = self.scale_energy
         self.necessary_quantities['scale_momentum'] = self.scale_momentum
 
+        #Add IH flux, IH, and Lsm1 (first moment of entropy gradient) location
         self.IH_flux = self._new_ncc()
         self.IH = self._new_ncc()
+        self.cz_mask = self._new_ncc()
+        self.cz_mask['g'] = 1
         self.necessary_quantities['IH_flux'] = self.IH_flux
         self.necessary_quantities['IH']      = self.IH
+        self.necessary_quantities['cz_mask'] = self.cz_mask
+        self.Lsm1 = 0
+        self.d_conv = 0
 
     def copy_atmosphere(self, atmosphere):
         '''
@@ -391,11 +397,11 @@ class ConstHeating(Atmosphere):
             self.constant_diffusivities = False
 
         
-        self.cz_mask = self._new_ncc()
         from scipy.special import erf
-        self.cz_mask['g'] = 0.5 * (erf(100*(self.z - self.z_cross)) + 1)
 
         self._set_atmosphere()
+        self.cz_mask['g'] = 0.5 * (erf(100*(self.z - self.z_cross)) + 1)
+        self.d_conv  = self.Lz / (1 + self.r)
         self._set_timescales()
 
     def depth_root_find(self, L):

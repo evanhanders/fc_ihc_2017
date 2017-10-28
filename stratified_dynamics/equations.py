@@ -7,17 +7,7 @@ from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__.split('.')[-1])
 
-#try:
-#    from tools.part_integrals import *
-#except:
-#    from sys import path
-#    path.insert(0, './tools')
-#    from ..tools.part_integrals import *
-
-
-
 from dedalus import public as de
-
 
 
 class Equations():
@@ -206,9 +196,9 @@ class FC_equations(Equations):
         self.IH_flux.differentiate('z', out=self.IH)
         self.problem.parameters['IH'] = self.IH
         self.problem.parameters['IH_flux'] = self.IH_flux
+        self.problem.parameters['cz_mask'] = self.cz_mask
 
         self.problem.parameters['Lsm1'] = self.Lsm1
-        self.problem.parameters['cz_mask'] = self.cz_mask
         self.problem.parameters['d_conv'] = self.d_conv
 
         # Thermo subs that are used later, but before set_subs() is called; okay or not okay?
@@ -391,7 +381,7 @@ class FC_equations(Equations):
         else:
             l_flux_rhs_str = " left((exp(-ln_rho1)-1+ln_rho1)*T0_z)"
             r_flux_rhs_str = "right((exp(-ln_rho1)-1+ln_rho1)*T0_z)"
-            # thermal boundary conditions
+        # thermal boundary conditions
         if fixed_flux:
             logger.info("Thermal BC: fixed flux (full form)")
             self.problem.add_bc( "left(T1_z + ln_rho1*T0_z) = {:s}".format(l_flux_rhs_str))
@@ -496,24 +486,10 @@ class FC_equations(Equations):
 
         analysis_profile = solver.evaluator.add_file_handler(data_dir+"profiles", max_writes=max_writes, parallel=False,
                                                              mode=mode, **kwargs)
-
-
-        analysis_profile.add_task("plane_avg(NL_z_momentum)", name="NL_z_momentum")
-        analysis_profile.add_task("plane_avg(NL_continuity)", name="NL_continuity")
-        analysis_profile.add_task("plane_avg(NL_energy)", name="NL_energy")
         analysis_profile.add_task("plane_avg(T1)", name="T1")
         analysis_profile.add_task("plane_avg(ln_rho1)", name="ln_rho1")
         analysis_profile.add_task("plane_avg(w)", name="w")
         analysis_profile.add_task("plane_avg(u)", name="u")
-        analysis_profile.add_task("plane_avg(dx(u))", name="dx_u")
-        analysis_profile.add_task("plane_avg(dx(w))", name="dx_w")
-        analysis_profile.add_task("plane_avg(dx(T1))", name="dx_T1")
-        analysis_profile.add_task("plane_avg(dx(dx(u)))", name="dx2_u")
-        analysis_profile.add_task("plane_avg(dx(dx(w)))", name="dx2_w")
-        analysis_profile.add_task("plane_avg(dx(dx(T1)))", name="dx2_T1")
-        analysis_profile.add_task("plane_avg(dx(u_z))", name="dx_u_z")
-        analysis_profile.add_task("plane_avg(dx(w_z))", name="dx_w_z")
-        analysis_profile.add_task("plane_avg(dx(T1_z))", name="dx_T1_z")
 
         analysis_profile.add_task("plane_avg(T_full)", name="T_full")
         analysis_profile.add_task("plane_avg(Ma_iso_rms)", name="Ma_iso")
@@ -533,7 +509,6 @@ class FC_equations(Equations):
         analysis_profile.add_task("plane_avg(w*(P))",  name="P_flux_z")
         analysis_profile.add_task("plane_avg(h_flux_z)",  name="enthalpy_flux_z")
         analysis_profile.add_task("plane_avg(-rho_full*chi*IH_flux)",  name="IH_flux_z_LHS")
-        analysis_profile.add_task("plane_avg(rho_full*chi*IH_flux)",  name="IH_flux_z")
         analysis_profile.add_task("plane_avg(viscous_flux_z)",  name="viscous_flux_z")
         analysis_profile.add_task("plane_avg(kappa_flux_z)", name="kappa_flux_z")
         analysis_profile.add_task("plane_avg(kappa_flux_fluc)", name="kappa_flux_fluc_z")
@@ -638,10 +613,6 @@ class FC_equations_2d(FC_equations):
 
         self._set_operators()
         self._set_diffusion_subs()
-
-        self.problem.substitutions['NL_z_momentum'] = "(-UdotGrad(w, w_z) - T1*dz(ln_rho1) + R_visc_w)"
-        self.problem.substitutions['NL_continuity'] = "(-UdotGrad(ln_rho1, dz(ln_rho1)))"
-        self.problem.substitutions['NL_energy']     = "(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)"
         super(FC_equations_2d, self)._set_subs()
         
     def set_equations(self, Rayleigh, Prandtl,
@@ -683,8 +654,6 @@ class FC_equations_2d(FC_equations):
         logger.debug("Setting energy equation")
         self.problem.add_equation(("(scale_energy)*( dt(T1)   + w*T0_z  + (gamma-1)*T0*Div_u -  L_thermal) = "
                                    "(scale_energy)*(-UdotGrad(T1, T1_z) - (gamma-1)*T1*Div_u + R_thermal + R_visc_heat + source_terms)")) 
-
-
 
     def initialize_output(self, solver, data_dir, coeffs_output=False,
                           max_writes=20, mode="overwrite", **kwargs):
