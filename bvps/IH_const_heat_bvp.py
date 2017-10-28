@@ -63,6 +63,14 @@ class IH_BVP_solver:
                             ('w_IVP',               'w'), 
                             ('EF_IVP',              'h_flux_z'), 
                             ('VF_IVP',              'viscous_flux_z'), 
+                            ('VH_IVP',              '(rho_full*Cv*R_visc_heat)'),
+                            ('Lap_T_IVP',           'Lap((T0 + T1), (T0_z + T1_z))'),
+                            ('PdV_IVP',             '(rho_full*Cv*(gamma-1)*T_full*Div_u)'),
+                            ('T_divU',              '(T_full*Div_u)'),
+                            ('divU',                '(Div_u)'),
+                            ('rho_divU',            '(rho_full*Div_u)'),
+                            ('rho_UdotGrad_T',      'rho_full*UdotGrad((T0 + T1), (T0_z + T1_z))'),
+                            ('UdotGrad_T',          'UdotGrad((T0 + T1), (T0_z + T1_z))'),
                             ('KEF_IVP',             'KE_flux_z'),
                             ('PEF_IVP',             'PE_flux_z'),
                             ('visc_IVP',            '(rho_full*(R_visc_w + L_visc_w))'), 
@@ -117,13 +125,19 @@ class IH_BVP_solver:
         self.n_per_proc     = self.nz/self.size
 
         # Set up tracking dictionaries for flow fields
-        self.profiles_dict, self.profiles_dict_last, self.profiles_dict_curr = dict(), dict(), dict()
+        self.profiles_dict = dict()
+        if self.rank == 0:
+            self.profiles_dict_last, self.profiles_dict_curr = dict(), dict()
         self.solver_states = dict()
         for st in IH_BVP_solver.VARS.keys():
             self.solver_states[st] = self.solver.state[IH_BVP_solver.VARS[st]]
         for fd in IH_BVP_solver.FIELDS.keys():
             self.flow.add_property('plane_avg({})'.format(IH_BVP_solver.FIELDS[fd]), name='{}_avg'.format(fd))
             self.profiles_dict[fd] = np.zeros(nz)
+            if self.rank == 0:
+                self.profiles_dict_last[fd] = np.zeros(nz)
+                self.profiles_dict_curr[fd] = np.zeros(nz)
+
        
 
     def get_full_profile(self, prof_name):
@@ -190,10 +204,14 @@ class IH_BVP_solver:
         # Turn profiles from time-weighted sums into appropriate averages.
         for k in IH_BVP_solver.FIELDS.keys():
             self.profiles_dict[k] /= self.avg_time_elapsed
-            self.profiles_dict_curr[k] = self.profiles_dict[k]
-            if self.completed_bvps > 0:
-                self.profiles_dict[k] += self.profiles_dict_last[k]
-                self.profiles_dict[k] /= 2.
+            if self.rank == 0:
+                self.profiles_dict_curr[k] = 1*self.profiles_dict[k]
+#                if self.completed_bvps > 0:
+#                    self.profiles_dict[k] += self.profiles_dict_last[k].sum(axis=0)
+#                    if self.completed_bvps < self.profiles_dict_last[k].shape[0]:
+#                        self.profiles_dict[k] /= (self.completed_bvps + 1)
+#                    else:
+#                        self.profiles_dict[k] /= (self.profiles_dict_last[k].shape[0]+1)
         # Restart counters for next BVP
         self.avg_time_elapsed   = 0.
         self.avg_time_start     = self.solver.sim_time
@@ -252,6 +270,18 @@ class IH_BVP_solver:
             atmosphere.problem.substitutions['flux_R'] = '(kappa_flux_R + enth_flux_R + KE_flux_R + PE_flux_R + visc_flux_R)'
 
 
+            #### Simple Energy Equation substitutions
+            atmosphere.problem.substitutions['L_rhoT_divU'] = '(Cv * (gamma-1))*(T_divU * rho1 + T1*rho_divU)'
+            atmosphere.problem.substitutions['R_rhoT_divU'] = '(PdV_IVP + Cv*(gamma-1)*rho1*T1*divU)'
+
+            atmosphere.problem.substitutions['L_rho_UdotGradT'] = 'Cv*(rho1 * UdotGrad_T + rho_w_IVP * T1_z)'
+            atmosphere.problem.substitutions['R_rho_UdotGradT'] = 'Cv*(rho_UdotGrad_T + rho1*T1_z * w_IVP)'
+
+            atmosphere.problem.substitutions['kappa_L'] = '(-(κ) * dz(T1_z))'
+            atmosphere.problem.substitutions['kappa_R'] = '(-(κ) * Lap_T_IVP)'
+
+
+
             #### Modified hydrostatic balance substitutions
             # rho * grad(T)
             atmosphere.problem.substitutions['L_rho_gradT'] = '(rho0_tot * T1_z + rho1 * T0_z_tot)'
@@ -271,7 +301,9 @@ class IH_BVP_solver:
             atmosphere.problem.add_equation("dz(M1) - rho1 = 0")
 
             logger.debug('Setting energy equation')
-            atmosphere.problem.add_equation(("dz(flux_L) = -dz(flux_R) + κ*IH"))
+#            atmosphere.problem.add_equation(("dz(flux_L) = -dz(flux_R) + κ*IH"))
+            atmosphere.problem.add_equation(("L_rhoT_divU + L_rho_UdotGradT + kappa_L = "
+                                             "-R_rhoT_divU - R_rho_UdotGradT - kappa_R + VH_IVP + κ*(IH)"))
 
             logger.debug("Setting modified hydrostatic equilibrium")
             atmosphere.problem.add_equation((" rho1 * UdotGrad_w + L_HSB = "
@@ -342,5 +374,8 @@ class IH_BVP_solver:
 
         # Reset profile arrays for getting the next bvp average
         for fd in IH_BVP_solver.FIELDS.keys():
-            self.profiles_dict_last[fd] = self.profiles_dict[fd]
+#            if self.rank == 0:
+#                for i in range(self.profiles_dict_last[fd].shape[0]-1):
+#                    self.profiles_dict_last[fd][-i,:] = self.profiles_dict_last[fd][-i-1,:]
+#                self.profiles_dict_last[fd][0,:] = 1*self.profiles_dict[fd]
             self.profiles_dict[fd] = np.zeros(self.nz)
